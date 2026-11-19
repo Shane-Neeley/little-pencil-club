@@ -29,6 +29,11 @@ const main = document.querySelector('#main');
 const notice = document.querySelector('#notice');
 const lessonById = new Map(lessons.map(lesson => [lesson.id, lesson]));
 const drawings = new Map();
+const drawingModes = [
+  ['paper', 'paper', 'Paper'],
+  ['trace', 'trace', 'Trace'],
+  ['copy', 'pencil', 'Copy'],
+];
 const width = 1000;
 const height = 690;
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
@@ -60,11 +65,15 @@ function saveStorage(key, value) {
 function dataFor(lesson) {
   if (!drawings.has(lesson.id)) {
     const saved = readStorage(lesson.id, {});
+    const strokes = Array.isArray(saved?.strokes) ? saved.strokes : [];
+    // Earlier versions stored Trace by default, even when the learner only advanced steps.
+    const legacyMode = saved?.mode === 'copy' || strokes.length ? saved?.mode : 'paper';
+    const mode = saved?.drawingMode ?? legacyMode;
     drawings.set(lesson.id, {
       step: Math.min(Math.max(0, Number(saved?.step) || 0), lesson.steps.length - 1),
-      strokes: Array.isArray(saved?.strokes) ? saved.strokes : [],
+      strokes,
       completed: Number(saved?.completed) || 0,
-      mode: ['trace', 'copy', 'paper'].includes(saved?.mode) ? saved.mode : 'trace',
+      drawingMode: drawingModes.some(([id]) => id === mode) ? mode : 'paper',
     });
   }
   return drawings.get(lesson.id);
@@ -156,7 +165,7 @@ function renderLibrary() {
     <section class="hero" aria-labelledby="home-title">
       <div class="hero-copy">
         <h1 id="home-title">Pick up<br> <em>a pencil.</em></h1>
-        <p>Learn to draw one little line at a time. Use your iPad or a real pencil and paper.</p>
+        <p>Grab a pencil and paper. Learn to draw one little line at a time.</p>
         <a class="primary" href="#draw/${fox.id}">${icon('pencil')} ${dataFor(fox).step && !dataFor(fox).completed ? 'Continue little fox' : 'Draw the little fox'}</a>
       </div>
       <div class="hero-art">
@@ -232,7 +241,6 @@ function renderStudio(lesson, finished) {
   const data = dataFor(lesson);
   session = { lesson, data, finished, tool: 'pencil', redo: [], duration: 980, remix: 0 };
   main.className = 'wrap studio';
-  const modes = [['trace', 'trace', 'Trace'], ['copy', 'pencil', 'Copy'], ['paper', 'paper', 'Paper']];
   main.innerHTML = `
     <div class="lesson-heading">
       <div>
@@ -240,13 +248,13 @@ function renderStudio(lesson, finished) {
         <h1>${lesson.title}</h1>
       </div>
       <div class="mode-group" aria-label="Drawing mode">
-        ${modes.map(([mode, glyph, label]) => toolButton(glyph, mode === 'paper' ? 'Draw on paper' : `${label} on screen`, `mode-${mode}`, label, mode === data.mode)).join('')}
+        ${drawingModes.map(([mode, glyph, label]) => toolButton(glyph, mode === 'paper' ? 'Draw on paper' : `${label} on screen`, `mode-${mode}`, label, mode === data.drawingMode)).join('')}
       </div>
     </div>
     <div class="studio-grid">
       <div class="board">
         <div class="board-head">
-          <div class="tool-group" id="drawing-tools" aria-label="Drawing tools">
+          <div class="tool-group" aria-label="Drawing tools">
             ${toolButton('pencil', 'Pencil', 'pencil', '', true)}
             ${toolButton('eraser', 'Eraser', 'eraser', '', false)}
             <span class="board-separator" aria-hidden="true"></span>
@@ -362,10 +370,10 @@ function redrawReferences() {
   const { lesson, data, finished } = session;
   const guide = document.querySelector('#guide');
   const step = finished ? lesson.steps.length - 1 : data.step;
-  if (data.mode === 'paper') {
+  if (data.drawingMode === 'paper') {
     drawExample(guide, lesson, step, { teaching: !finished, decorative: finished, scale: 1.02 });
   } else {
-    drawExample(guide, lesson, data.mode === 'trace' && !finished ? step : -1, { guide: true });
+    drawExample(guide, lesson, data.drawingMode === 'trace' && !finished ? step : -1, { guide: true });
   }
   redrawDemo();
 }
@@ -392,9 +400,9 @@ function playDemo() {
 
 function updateTools() {
   const { data, tool, redo } = session;
-  const paper = data.mode === 'paper';
+  const paper = data.drawingMode === 'paper';
   const setPressed = (action, pressed) => main.querySelector(`[data-action="${action}"]`).setAttribute('aria-pressed', String(pressed));
-  ['trace', 'copy', 'paper'].forEach(mode => setPressed(`mode-${mode}`, data.mode === mode));
+  drawingModes.forEach(([mode]) => setPressed(`mode-${mode}`, data.drawingMode === mode));
   setPressed('pencil', tool === 'pencil');
   setPressed('eraser', tool === 'eraser');
   main.querySelector('[data-action="undo"]').disabled = !data.strokes.length;
@@ -403,7 +411,7 @@ function updateTools() {
   main.querySelector('[data-action="save"]').disabled = paper || !data.strokes.some(stroke => stroke.tool === 'pencil');
   session.canvas.hidden = paper;
   session.canvas.style.cursor = tool === 'eraser' ? 'cell' : 'crosshair';
-  main.querySelector('#drawing-tools').hidden = paper;
+  main.querySelector('.board-head').hidden = paper;
   main.querySelector('#pencil-only-control').hidden = paper;
   main.querySelector('#input-caption').textContent = paper
     ? 'Follow along with your pencil and paper'
@@ -446,7 +454,7 @@ function studioClick(event) {
   if (!session || !action) return;
   if (action.startsWith('mode-')) {
     if (session.stroke) endStroke();
-    session.data.mode = action.slice(5);
+    session.data.drawingMode = action.slice(5);
     updateTools();
     repaintInk();
     redrawReferences();
@@ -575,7 +583,7 @@ function drawStroke(ctx, stroke) {
 }
 
 function repaintInk() {
-  if (!session || session.data.mode === 'paper') return;
+  if (!session || session.data.drawingMode === 'paper') return;
   const { canvas, data, stroke } = session;
   const ratio = Math.min(2.5, devicePixelRatio || 1);
   const newWidth = Math.round(canvas.clientWidth * ratio);
@@ -601,7 +609,7 @@ function paintThumbnail(canvas, strokes) {
 }
 
 function undoOrRedo(redo) {
-  if (!session || session.data.mode === 'paper' || session.stroke) return;
+  if (!session || session.data.drawingMode === 'paper' || session.stroke) return;
   const { data } = session;
   const from = redo ? session.redo : data.strokes;
   const to = redo ? data.strokes : session.redo;

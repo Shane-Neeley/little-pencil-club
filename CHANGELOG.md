@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Lessons open in Paper mode so you can grab a pencil and follow along in your sketchbook.
+
 ## November 18, 2026
 
 ### First public release (site-v1)

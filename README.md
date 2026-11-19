@@ -2,7 +2,7 @@
 
 [Open Little Pencil Club](https://little-pencil-club.fort-rock.chatgpt.site/) in Safari on iPad or in a modern desktop or mobile browser. Start with **Little fox**, or choose from 20 lessons in Animals, Food, Fashion, Nature, Things, and Fantasy.
 
-- **Trace** shows a faint guide on the canvas. **Copy** gives you a blank canvas alongside the demonstration. **Paper** shows the lesson at a larger size for drawing in a real sketchbook.
+- Lessons open in **Paper** mode with a large example to follow in a real sketchbook. Choose **Trace** for a faint guide on the canvas or **Copy** for a blank canvas alongside the demonstration.
 - Tap the demonstration to replay the latest strokes. Open **Pencil tip** for help with technique.
 - Use Apple Pencil, a finger, or a mouse. Turn on **Pencil only** below the canvas if you prefer to draw with the stylus while resting your hand on the screen.
 - Finish a lesson to unlock a remix idea. Find your work in **Sketchbook**, and use **Save** to download a PNG you can keep.
