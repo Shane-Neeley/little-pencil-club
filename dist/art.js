@@ -137,14 +137,15 @@ const drawExample = (() => {
   function prepare(lesson) {
     let data = pathsByLesson.get(lesson);
     if (!data) {
-      data = {
-        stages: lesson.steps.map(([, , , , ...paths]) => paths.map(path => ({
-          data: path,
-          path: new Path2D(path),
-          animation: null,
-        }))),
-        washes: (washes[lesson.id] || []).map(([color, path]) => [color, new Path2D(path)]),
-      };
+      const stages = lesson.steps.map(([, , , , ...paths]) => paths.map(path => ({
+        data: path,
+        path: new Path2D(path),
+        animation: null,
+      })));
+      const previewWashes = lesson.previewColors
+        ? lesson.previewColors.map(([color, step, stroke]) => [color, stages[step][stroke].path])
+        : (washes[lesson.id] || []).map(([color, path]) => [color, new Path2D(path)]);
+      data = { stages, washes: previewWashes };
       pathsByLesson.set(lesson, data);
     }
     return data;

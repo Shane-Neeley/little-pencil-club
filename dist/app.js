@@ -274,7 +274,12 @@ function renderStudio(lesson, finished) {
           <canvas id="guide" aria-hidden="true"></canvas>
           <canvas id="ink" aria-label="Drawing area. Draw with an Apple Pencil, finger, or mouse."></canvas>
         </div>
-        <button class="board-replay secondary" type="button" data-action="replay" hidden>${icon('play')}Replay</button>
+        <div class="paper-actions" role="group" aria-label="Paper lesson controls" hidden>
+          <span class="sr-only" role="status"></span>
+          <button class="secondary" type="button" data-action="back">Back</button>
+          <button class="board-replay secondary" type="button" data-action="replay">${icon('play')}Replay</button>
+          <button class="primary" type="button" data-action="next">Next</button>
+        </div>
         <div class="board-foot">
           <label><input type="checkbox" id="pencil-only" ${pencilOnly ? 'checked' : ''}>Pencil only</label>
         </div>
@@ -420,7 +425,7 @@ function updateTools() {
   main.querySelector('.studio-grid').classList.toggle('is-paper', paper);
   const demo = main.querySelector('.demo');
   if (demo) demo.hidden = paper;
-  main.querySelector('.board-replay').hidden = !paper || session.finished;
+  updatePaperControls();
   setPressed('pencil', tool === 'pencil');
   setPressed('eraser', tool === 'eraser');
   main.querySelector('[data-action="undo"]').disabled = !data.strokes.length;
@@ -433,14 +438,28 @@ function updateTools() {
   main.querySelector('.board-foot').hidden = paper;
 }
 
+function updatePaperControls() {
+  const { data, lesson, finished } = session;
+  const controls = main.querySelector('.paper-actions');
+  controls.hidden = data.drawingMode !== 'paper' || finished;
+  if (controls.hidden) return;
+  const stepNumber = data.step + 1;
+  const description = `Step ${stepNumber} of ${lesson.steps.length}. ${lesson.steps[data.step][0]}`;
+  const status = controls.querySelector('[role="status"]');
+  if (status.textContent !== description) status.textContent = description;
+  controls.querySelector('[data-action="back"]').disabled = data.step === 0;
+  controls.querySelector('[data-action="next"]').textContent = stepNumber === lesson.steps.length ? 'Finish' : 'Next';
+}
+
 function setStep(index) {
   if (index < 0 || index >= session.lesson.steps.length || index === session.data.step) return;
   session.data.step = index;
   persist();
   renderPanel();
+  updatePaperControls();
   redrawReferences();
   playDemo();
-  main.querySelector('.step-heading').focus({ preventScroll: true });
+  if (session.data.drawingMode !== 'paper') main.querySelector('.step-heading').focus({ preventScroll: true });
 }
 
 function finishLesson() {
@@ -657,7 +676,6 @@ function savePng() {
   }, 'image/png');
 }
 
-document.querySelectorAll('[data-icon]').forEach(element => { element.innerHTML = icon(element.dataset.icon); });
 document.querySelectorAll('[data-icon-label]').forEach(element => { element.insertAdjacentHTML('afterbegin', icon(element.dataset.iconLabel)); });
 main.addEventListener('click', studioClick);
 window.addEventListener('hashchange', render);

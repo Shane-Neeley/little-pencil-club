@@ -36,8 +36,7 @@ h1, h2, h3, p { margin: 0; }
   display: flex; justify-content: space-between; align-items: center; gap: 12px;
 }
 .brand { display: inline-flex; align-items: center; gap: 11px; white-space: nowrap; font-size: 21px; font-weight: 800; letter-spacing: -.03em; }
-.brand-mark { display: grid; place-items: center; width: 37px; height: 37px; color: var(--ink); background: var(--yellow); border-radius: 12px; transform: rotate(-6deg); }
-.brand-mark .icon { width: 21px; height: 21px; }
+.brand-mark { display: block; flex: none; width: 40px; height: 40px; }
 .brand-dot { color: #b8396e; }
 .site-nav { display: flex; gap: 5px; align-items: center; }
 .site-nav a {
@@ -204,10 +203,9 @@ h1, h2, h3, p { margin: 0; }
 .is-paper .surface { background-image: none; }
 .surface canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 #ink { touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; cursor: crosshair; }
-.board-replay {
-  display: flex; width: max-content; margin: 0 14px 14px auto;
-  min-height: 46px; background: var(--lilac); border-color: #d6c5ec;
-}
+.paper-actions { display: flex; align-items: stretch; justify-content: flex-end; gap: 8px; padding: 0 14px 14px; }
+.paper-actions .primary { min-width: 112px; }
+.board-replay { background: var(--lilac); border-color: #d6c5ec; }
 .board-replay:hover { background: #e4d3fb; }
 .board-replay .icon { width: 18px; height: 18px; color: var(--violet); }
 .board-replay:focus-visible { outline-offset: 2px; }
@@ -248,6 +246,7 @@ h1, h2, h3, p { margin: 0; }
 .hint p { font-size: .94rem; line-height: 1.45; padding-bottom: 10px; }
 .step-actions { display: flex; justify-content: space-between; gap: 7px; margin-top: 13px; }
 .step-actions .primary { flex: 1; min-height: 52px; }
+.is-paper .step-tabs, .is-paper .step-actions { display: none; }
 .finish-sheet { padding: 25px; text-align: center; }
 .finish-title { font-size: clamp(2.35rem, 4.3vw, 3.4rem); margin: 10px 0; }
 .finish-icon { color: var(--violet); }
@@ -295,7 +294,7 @@ h1, h2, h3, p { margin: 0; }
   }
   .is-paper .lesson-panel:not(.finish-sheet) {
     grid-template-columns: 1fr;
-    grid-template-areas: 'progress' 'heading' 'instruction' 'actions' 'tip';
+    grid-template-areas: 'progress' 'heading' 'instruction' 'tip';
   }
   .step-progress { grid-area: progress; }
   .demo { grid-area: demo; align-self: center; }
@@ -310,11 +309,6 @@ h1, h2, h3, p { margin: 0; }
     grid-template-areas: 'demo progress progress' 'demo heading actions' 'demo instruction actions' 'demo tip actions';
     align-items: start;
   }
-  .is-paper .lesson-panel:not(.finish-sheet) {
-    grid-template-columns: minmax(0, 1fr) 142px;
-    grid-template-areas: 'progress actions' 'heading actions' 'instruction actions' 'tip actions';
-  }
-  .is-paper .step-progress { justify-content: flex-start; }
   .step-actions { flex-direction: column-reverse; }
   .step-actions .primary { min-height: 52px; }
   .surface { width: min(100%, max(400px, calc((100dvh - 420px) * 1.4493))); margin-inline: auto; }
@@ -329,8 +323,7 @@ h1, h2, h3, p { margin: 0; }
 }
 @media (max-width: 480px) {
   .brand { font-size: 17px; gap: 7px; }
-  .brand-mark { width: 31px; height: 31px; border-radius: 9px; }
-  .brand-mark .icon { width: 18px; height: 18px; }
+  .brand-mark { width: 33px; height: 33px; }
   .site-nav { gap: 1px; }
   .site-nav a { padding-inline: 7px; gap: 4px; font-size: .82rem; }
   .site-nav .icon { display: none; }
@@ -352,7 +345,9 @@ h1, h2, h3, p { margin: 0; }
   .filters { gap: 6px; }
   .filter { gap: 4px; padding-inline: 9px; font-size: .85rem; }
   .tool-text.optional { display: none; }
-  .board-replay { margin: 0 9px 9px auto; padding-inline: 11px; }
+  .paper-actions { gap: 6px; padding: 0 9px 9px; }
+  .paper-actions button { padding-inline: 10px; }
+  .paper-actions .primary { min-width: 0; flex: 1; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; }

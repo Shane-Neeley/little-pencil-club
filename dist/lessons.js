@@ -23,6 +23,126 @@ const lessons = [
     ],
   },
   {
+    id: 'axolotl', title: 'Smiley axolotl', category: 'Animals', minutes: 4, level: 1, skill: 'Soft curves',
+    previewColors: [['#e690b0', 1, 0], ['#f3adc8', 0, 0], ['#c96d98', 2, 0], ['#c96d98', 2, 1]],
+    steps: [
+      ['Draw a round head', 'Make a wide, round head.', 'Think of a marshmallow lying on its side.', 'Leave space on both sides for the gills.', 'M55 81 C55 53 83 43 119 43 C157 43 185 55 185 81 C185 108 154 121 119 121 C82 121 55 107 55 81Z'],
+      ['Add the body', 'Draw a small body with a swishy tail.', 'Start under the head and curve down to the feet. On the right, bring the tail up to a point.', 'Follow the long tail curve in one smooth line.', 'M82 115 Q68 127 72 142 Q66 151 77 158 Q84 162 93 156 Q105 171 137 169 Q154 174 164 165 Q175 157 161 149 Q190 141 207 111 Q183 131 156 135 Q151 124 140 119'],
+      ['Draw the gills', 'Add three little frills on each side.', 'The frills point up, out, and down like soft petals.', 'Let the frills touch the head without crossing the face.', 'M67 59 Q46 35 36 45 Q34 53 55 72 Q31 61 25 73 Q22 84 55 86 Q30 90 33 100 Q39 112 62 98', 'M172 58 Q195 35 204 45 Q206 53 185 73 Q209 61 215 73 Q218 84 185 86 Q210 90 206 100 Q201 112 178 98'],
+      ['Give it a smile', 'Add two eyes, a smile, and cheek marks.', 'Put the eyes far apart, then add a curved smile in the middle.', 'Draw two small pencil dashes on each cheek.', 'M89 76 a4 6 0 1 0 0.1 0Z M150 76 a4 6 0 1 0 0.1 0Z', 'M109 91 Q120 104 131 91 M77 92 l4-2 m3 4 l4-2 M151 94 l4-2 m3 4 l4-2', 'M97 146 q6 7 12 0 M135 146 q6 7 12 0'],
+    ],
+  },
+  {
+    id: 'berry-cupcake', title: 'Berry cupcake', category: 'Food', minutes: 4, level: 1, skill: 'Curves & stripes',
+    previewColors: [['#ca83bd', 0, 0], ['#f3a5c0', 1, 0], ['#dc577e', 2, 0], ['#98ae70', 2, 1]],
+    steps: [
+      ['Make the wrapper', 'Draw a cup with slanted sides.', 'Keep the top edge wider than the bottom edge.', 'A slight curve makes the bottom look round.', 'M68 113 Q121 119 172 113 L159 166 Q155 177 121 178 Q87 177 82 166Z'],
+      ['Swirl the frosting', 'Stack two wavy frosting swirls on top.', 'The bottom swirl is wider. The next one curls into a soft point.', 'Join the frosting to the top corners of the wrapper.', 'M69 115 Q46 107 59 94 Q64 89 75 88 Q65 77 83 69 Q91 65 98 66 Q99 52 119 49 Q136 47 140 35 Q156 46 145 61 Q170 64 166 79 Q185 79 187 94 Q194 113 171 115 Q153 125 137 115 Q120 126 104 116 Q87 124 69 115Z', 'M76 88 Q92 98 112 91 M103 68 Q127 78 151 72'],
+      ['Put a berry on top', 'Add a little berry and two leaves.', 'Use a round shape for the berry and two pointed loops for the leaves.', 'Turn the leaves in different directions.', 'M159 52 C153 41 160 31 170 32 C181 34 185 45 175 54 Q166 60 159 52Z', 'M166 34 Q163 23 154 24 Q157 33 166 34 M169 33 Q176 24 184 26 Q180 34 169 33 M162 44 l2 2 M173 46 l2 1'],
+      ['Add stripes and sprinkles', 'Use little lines for stripes and sprinkles.', 'Pull the stripes down the wrapper and scatter short marks over the frosting.', 'Turn the sprinkles in different directions.', 'M81 123 L92 165 M94 126 L103 171 M107 126 L113 174 M121 125 L121 175 M135 126 L130 173 M148 125 L140 170 M160 123 L151 166', 'M88 102 l5-3 M104 84 l2 5 M121 106 l5-5 M136 84 l5 2 M154 102 l2-5 M173 96 l5 3'],
+    ],
+  },
+  {
+    id: 'heart-sunglasses', title: 'Heart sunglasses', category: 'Fashion', minutes: 4, level: 1, skill: 'Matching shapes',
+    previewColors: [['#e283a8', 0, 0], ['#e283a8', 0, 1], ['#8775bf', 1, 0], ['#8775bf', 1, 1]],
+    steps: [
+      ['Draw two hearts', 'Draw two big hearts side by side.', 'Give both hearts two round tops and a soft point.', 'Leave a small gap between the hearts.', 'M69 133 C60 125 29 106 27 84 C25 64 47 55 69 73 C88 55 110 65 111 84 C111 105 81 126 69 133Z', 'M171 133 C160 125 129 106 129 84 C128 65 150 55 171 73 C193 55 214 65 213 84 C212 106 182 126 171 133Z'],
+      ['Make the lenses', 'Draw a smaller heart inside each one.', 'Follow the same curve all the way around so the rim stays about the same width.', 'Start near the little dip at the top of each heart.', 'M69 123 C58 116 37 102 36 84 C35 71 50 65 69 84 C87 66 102 72 102 84 C102 101 81 117 69 123Z', 'M171 123 C160 116 138 102 138 84 C138 72 152 65 171 84 C190 65 205 72 204 84 C203 102 182 117 171 123Z'],
+      ['Join the glasses', 'Connect the hearts and add the sides.', 'Put a small curved bridge in the middle, then add a little handle to each outside edge.', 'Leave the bridge below the dips at the top.', 'M109 93 Q120 87 131 93 M106 100 Q120 94 134 100', 'M28 81 L18 79 Q13 80 14 85 L28 90 M212 81 L222 79 Q227 80 226 85 L212 90'],
+      ['Make them sparkle', 'Draw slanted shine marks on the lenses.', 'Put two little lines on each lens and a sparkle beside the glasses.', 'Keep the shine marks parallel.', 'M48 90 l12-8 m-11 16 l16-10 M148 90 l12-8 m-11 16 l16-10', 'M198 138 Q200 146 209 148 Q200 150 198 159 Q196 150 187 148 Q196 146 198 138Z M37 133 l0 10 m-5-5 l10 0'],
+    ],
+  },
+  {
+    id: 'baby-penguin', title: 'Baby penguin', category: 'Animals', minutes: 4, level: 1, skill: 'Round shapes',
+    previewColors: [['#8187b8', 0, 0], ['#f8edcf', 1, 0], ['#edaa63', 2, 2], ['#edaa63', 3, 1]],
+    steps: [
+      ['Draw a big egg', 'Draw an egg that’s wider at the bottom.', 'Make the top round and let the sides spread out near the feet.', 'Keep the outline soft.', 'M120 28 C157 28 177 64 179 108 C180 150 155 174 120 174 C84 174 60 151 61 108 C62 64 83 28 120 28Z'],
+      ['Add the tummy', 'Draw a round tummy with a dip at the top.', 'Start with two round humps under the forehead and sweep around the belly.', 'Leave a wide edge between the tummy and outside line.', 'M120 67 C101 50 75 69 75 111 C75 146 93 161 120 161 C147 161 165 146 165 111 C165 69 138 50 120 67Z'],
+      ['Add wings and feet', 'Draw two flippers and two flat feet.', 'Curve the flippers out toward the sides. Put the round toes underneath.', 'Look at both sides to keep the flippers about the same size.', 'M63 96 Q46 108 42 134 Q45 151 64 140', 'M177 96 Q194 108 198 134 Q195 151 176 140', 'M91 166 Q75 171 78 181 Q82 187 108 183 L115 173Z M149 166 Q165 171 162 181 Q158 187 132 183 L125 173Z'],
+      ['Make the face', 'Add two eyes and a tiny beak.', 'Draw little upright ovals and a triangle with a rounded point.', 'Leave a dot of white in each eye.', 'M104 84 a4 6 0 1 0 0.1 0Z M135 84 a4 6 0 1 0 0.1 0Z', 'M113 101 Q120 97 127 101 L121 109Z', 'M90 103 l6-1 M144 103 l6 1'],
+    ],
+  },
+  {
+    id: 'pancake-stack', title: 'Pancake stack', category: 'Food', minutes: 4, level: 1, skill: 'Stacked shapes',
+    previewColors: [['#d49769', 1, 0], ['#e3b57c', 0, 0], ['#bd8053', 2, 0], ['#efc46b', 3, 0]],
+    steps: [
+      ['Draw the top pancake', 'Draw a wide, flat oval.', 'Keep the front curve soft and a little wider than the back curve.', 'Leave room below to stack more pancakes.', 'M47 81 C47 61 81 50 120 50 C158 50 193 61 193 81 C193 101 158 112 120 112 C81 112 47 101 47 81Z'],
+      ['Stack two more', 'Draw two rounded bands underneath.', 'Follow the front curve down to add a thick edge, then repeat for the lower pancake.', 'Let the edges curve up at both ends.', 'M47 84 C45 96 48 109 63 118 Q120 144 177 118 C192 110 195 97 193 84', 'M54 111 C47 123 52 136 65 144 Q120 171 175 144 C189 136 193 122 186 111', 'M67 147 Q76 162 120 163 Q164 162 173 147'],
+      ['Drizzle syrup', 'Add a syrup puddle with two drips.', 'Draw a wavy puddle across the top. Curve two narrow drips toward the front.', 'Make one drip longer than the other.', 'M75 79 Q81 69 99 73 Q115 67 132 73 Q153 66 165 80 Q171 89 153 94 Q147 96 148 102 Q150 109 143 109 Q135 109 135 103 Q136 99 126 99 Q115 100 115 105 Q114 111 108 110 Q103 109 103 104 Q104 100 96 97 Q72 94 75 79Z'],
+      ['Add a pat of butter', 'Put a little slanted square on top.', 'Draw the butter’s top, then a shallow edge below it. Add a few crumbs in the open spaces.', 'Keep the butter small enough to leave a rim of syrup around it.', 'M106 78 L122 73 L139 79 L125 86Z M106 78 L106 84 L125 93 L139 86 L139 79 M125 86 L125 93', 'M67 82 l2 1 M173 86 l2-1 M82 126 l5 1 M161 131 l7-2 M111 151 l4 1'],
+    ],
+  },
+  {
+    id: 'bow-backpack', title: 'Bow backpack', category: 'Fashion', minutes: 5, level: 2, skill: 'Curves & seams',
+    previewColors: [['#b68edf', 0, 0], ['#e98ab4', 1, 0], ['#df75a4', 2, 1], ['#df75a4', 2, 2], ['#e7b86e', 2, 3]],
+    steps: [
+      ['Draw the bag', 'Draw a tall bag with a rounded top.', 'Let the sides get wider toward the rounded bottom corners.', 'Keep the bottom almost flat so it can stand up.', 'M65 84 C65 56 88 43 120 43 C151 43 175 56 175 84 L181 151 Q183 171 164 178 Q121 191 76 178 Q57 172 59 151Z'],
+      ['Add a pocket', 'Draw a big pocket and two straight zips.', 'Place the pocket low on the bag. Draw the top zip as a gentle arc.', 'Leave a strip of space between the lower pocket and the edge.', 'M77 127 Q79 121 88 121 L152 121 Q161 121 163 127 L165 155 Q165 164 156 167 Q120 175 84 167 Q75 164 75 155Z', 'M77 137 Q120 141 163 137 M85 137 L88 146 L93 146 L94 138', 'M75 84 Q120 72 166 84 M155 81 L158 90 L163 91 L165 84'],
+      ['Draw a bow and handle', 'Add a handle and a bow with two loops.', 'Start with a short loop on top. Put the bow above the pocket, with its two sides meeting in the middle.', 'Try to make the two loops the same width.', 'M103 44 Q103 25 120 25 Q137 25 137 44 M109 43 Q110 32 120 32 Q131 32 131 43', 'M114 101 Q95 86 89 95 Q86 106 91 115 Q99 119 114 107Z', 'M126 101 Q145 86 151 95 Q154 106 149 115 Q141 119 126 107Z', 'M114 101 Q120 97 126 101 L126 108 Q120 113 114 108Z'],
+      ['Finish the seams', 'Add little dashes along the edges.', 'Follow the two sides of the bag, then draw a few crease marks in the bow.', 'Use short dashes with small gaps between them.', 'M68 115 l-1 6 m0 5 l-1 6 m0 5 l0 6 m0 5 l0 6 M172 115 l1 6 m0 5 l1 6 m0 5 l0 6 m0 5 l0 6', 'M98 102 q6-2 12 1 M130 103 q6-3 12-1 M91 157 l7 1 m5 0 l7 1 m5 0 l7 0 m5 0 l7 0 m5 0 l7-1'],
+    ],
+  },
+  {
+    id: 'tiny-hedgehog', title: 'Tiny hedgehog', category: 'Animals', minutes: 4, level: 1, skill: 'Zigzags & curves',
+    previewColors: [['#b18a71', 0, 0], ['#e6b595', 1, 0], ['#bb7c85', 2, 1]],
+    steps: [
+      ['Draw the spiky back', 'Make a round back with little points.', 'Follow a big dome from left to right, adding soft triangles around the edge.', 'Make the points smaller near the bottom.', 'M71 134 Q65 124 61 111 L67 111 L62 89 L76 94 L79 68 L92 77 L105 55 L114 67 L134 50 L138 66 L163 58 L162 74 L186 74 L181 89 L202 97 L193 108 L211 124 L199 130 L208 144 L195 149 Q177 169 137 168 Q96 169 71 134Z'],
+      ['Give it a face', 'Draw a pointy nose and a round cheek.', 'Start near the left edge of the spikes, then curve down to the little pointed snout.', 'Make the cheek round where it meets the belly.', 'M74 103 Q64 108 56 123 Q43 132 24 129 Q26 150 46 156 Q66 171 103 164 Q118 159 119 146 Q118 131 102 122 Q92 110 74 103Z'],
+      ['Add two feet and an eye', 'Draw two little feet, an eye, and an ear.', 'Put the feet along the bottom and a curved ear high on the cheek.', 'Leave a little white dot in the eye.', 'M76 164 Q66 176 76 179 L95 178 Q100 174 95 165 M137 167 Q132 178 143 179 L162 176 Q169 172 162 166', 'M88 120 C84 110 95 105 102 112 Q108 117 104 125Z', 'M60 129 a4 5 0 1 0 0.1 0Z M24 129 q8-4 12 2 q-3 8-11 7 M39 145 q6 7 13 3'],
+      ['Draw the prickles', 'Add little V shapes on the back.', 'Turn the little marks to point away from the face.', 'Space them out so the soft cheek stays easy to see.', 'M107 94 l6-10 l5 10 M132 82 l7-10 l4 11 M157 91 l8-9 l2 12 M121 116 l7-10 l4 11 M146 108 l8-10 l3 12 M172 119 l9-7 l-1 11 M135 139 l8-9 l3 10 M158 145 l10-7 l-1 12'],
+    ],
+  },
+  {
+    id: 'sprinkle-donut', title: 'Sprinkle donut', category: 'Food', minutes: 4, level: 1, skill: 'Loops & patterns',
+    previewColors: [['#ec89b9', 0, 0]],
+    steps: [
+      ['Draw the donut', 'Make a big round ring.', 'Draw a large round shape and a small circle in the center.', 'It’s okay if the outside is a little wobbly.', 'M120 34 C168 34 200 63 200 106 C200 148 166 176 120 176 C74 176 40 147 40 106 C40 64 73 34 120 34Z M120 81 C103 81 93 91 93 106 C93 121 104 131 120 131 C135 131 147 121 147 106 C147 92 138 81 120 81Z'],
+      ['Show the lower edge', 'Add one soft curve below the center hole.', 'Place a short curve inside the hole. It makes the ring look thicker.', 'Keep it close to the bottom edge of the hole.', 'M98 115 Q120 101 142 115'],
+      ['Give it icing', 'Draw a wavy ring inside the big circle.', 'Go around the donut with little bumps to make the frosting edge.', 'Let the bumps get taller in a few places.', 'M120 45 C134 40 148 47 153 53 Q164 49 174 62 Q175 69 184 75 Q194 86 189 99 Q198 114 187 123 Q187 138 172 142 Q166 158 150 155 Q138 170 123 163 Q108 174 97 163 Q80 167 72 154 Q56 153 55 137 Q43 129 50 115 Q42 102 51 92 Q47 77 61 70 Q61 57 76 56 Q87 43 99 50 Q109 41 120 45Z'],
+      ['Scatter sprinkles', 'Add short sprinkles all around the ring.', 'Use little dashes at different angles. Leave the center hole clear.', 'Spread the sprinkles out so you can see them one by one.', 'M84 71 l7 3 M108 62 l4-6 M134 64 l7 4 M162 77 l8-2 M170 99 l3 7 M167 126 l-6 4 M147 143 l-4 6 M119 145 l6 5 M91 141 l-6 3 M74 123 l-5-4 M69 101 l7-3 M78 85 l4 5'],
+    ],
+  },
+  {
+    id: 'star-hoodie', title: 'Star hoodie', category: 'Fashion', minutes: 5, level: 2, skill: 'Mirrored sides',
+    previewColors: [['#b68ad5', 0, 0], ['#a28bcf', 1, 0], ['#d7a8e6', 2, 0], ['#ecbf5d', 3, 0]],
+    steps: [
+      ['Draw the hood', 'Make a round hood and a U-shaped opening.', 'Draw the hood first, then follow it with a smaller curve inside.', 'Join both sides at the neck.', 'M80 64 Q85 30 120 25 Q155 30 160 64 Q156 88 120 95 Q84 88 80 64Z', 'M94 60 Q99 39 120 35 Q142 40 146 60 Q143 77 120 87 Q98 77 94 60Z'],
+      ['Add the sleeves', 'Draw two sleeves and join the bottom.', 'Angle both sleeves out from the hood. Turn the lines inward to form a wide body.', 'Make the cuffs end at the same height.', 'M84 77 Q62 82 47 103 L30 144 L61 157 L76 127 L75 176 Q120 186 165 176 L164 127 L179 157 L210 144 L193 103 Q178 82 156 77', 'M36 136 L65 148 M204 136 L175 148 M76 166 Q120 175 164 166'],
+      ['Draw a pocket', 'Add a pocket with slanted sides.', 'Place the flat top low on the sweatshirt. Slant down on both sides and join the bottom.', 'Leave space above the pocket for a star.', 'M99 138 L141 138 L154 155 L154 165 Q120 169 86 165 L86 155Z M91 157 Q120 162 149 157'],
+      ['Add a little star', 'Draw a star and two little hoodie strings.', 'Place the star above the pocket and draw a string from each side of the neck.', 'The strings can end at slightly different heights.', 'M120 103 L124 112 L134 113 L127 120 L129 130 L120 125 L111 130 L113 120 L106 113 L116 112Z', 'M102 91 Q103 99 100 106 L102 109 M139 91 Q139 101 143 110 L142 113'],
+    ],
+  },
+  {
+    id: 'corgi-pup', title: 'Corgi pup', category: 'Animals', minutes: 5, level: 2, skill: 'Rounded triangles',
+    previewColors: [['#d99566', 0, 0], ['#e4a5a7', 1, 2], ['#e4a5a7', 1, 3], ['#f1ddb5', 2, 0], ['#a590da', 2, 1]],
+    steps: [
+      ['Draw a soft head', 'Make a wide head with round cheeks.', 'Start with a gentle curve across the forehead. Make the bottom wider for the cheeks.', 'Leave room above the head for big ears.', 'M56 88 C58 64 83 54 120 54 C156 54 182 65 184 88 C185 115 164 132 120 132 C77 132 55 116 56 88Z'],
+      ['Add the big ears', 'Draw two tall, rounded triangles.', 'Start at the top of each cheek and bring the ears back to the forehead.', 'Draw a smaller triangle inside each ear.', 'M60 76 Q51 54 58 30 Q63 19 71 29 Q84 39 91 58', 'M149 58 Q156 39 169 29 Q177 19 182 30 Q189 54 180 76', 'M64 59 Q60 45 65 34 Q74 40 82 60Z', 'M158 60 Q165 40 175 34 Q180 45 176 59Z'],
+      ['Give it a bandana', 'Draw two paws and a little triangle scarf.', 'Add a low chest under the cheeks, then bring two scarf lines to a point.', 'Put the scarf above the paws.', 'M91 129 Q75 143 79 164 Q78 176 96 177 Q110 177 112 169 L128 169 Q130 177 144 177 Q162 176 161 164 Q165 143 149 129Z', 'M92 129 Q119 137 148 129 Q143 150 120 161 Q97 150 92 129Z', 'M148 134 Q159 130 168 135 Q163 142 153 142'],
+      ['Make the puppy face', 'Add eyes, a nose, and a puppy smile.', 'Leave a wide space between the oval eyes. Put the nose above a small smile.', 'Add a tiny curve for a tongue if you like.', 'M88 85 a5 7 0 1 0 0.1 0Z M152 85 a5 7 0 1 0 0.1 0Z', 'M110 105 Q120 101 130 105 Q127 114 120 114 Q113 114 110 105Z M120 114 Q115 123 105 117 M120 114 Q125 123 135 117 M114 121 Q120 132 126 121', 'M75 104 l7-2 M158 102 l7 2 M90 168 l1 5 M149 168 l-1 5'],
+    ],
+  },
+  {
+    id: 'boba-tea', title: 'Boba tea', category: 'Food', minutes: 4, level: 1, skill: 'Straight lines & circles',
+    previewColors: [['#c38c74', 0, 0], ['#c59edd', 1, 1], ['#8d6c9b', 3, 0]],
+    steps: [
+      ['Draw the cup', 'Draw a cup that’s narrower at the bottom.', 'Make a wide curve at the top, two slanted edges, and a round bottom.', 'Leave space above for a lid and straw.', 'M66 77 Q120 84 174 77 L162 156 Q160 177 120 177 Q80 177 78 156Z'],
+      ['Add a lid and straw', 'Put a lid across the top and a straw through it.', 'Draw a low band over the rim. Point the straw a little to the right.', 'Keep the straw’s sides parallel.', 'M66 77 Q60 71 64 65 Q65 58 73 57 Q120 63 167 57 Q175 58 176 65 Q180 71 174 77 Q120 84 66 77Z', 'M125 59 L135 30 Q139 23 145 26 Q151 28 148 35 L138 60Z M133 39 L145 44'],
+      ['Pour in the tea', 'Draw one wavy line across the cup.', 'Draw the liquid line halfway down. It can rise a little at the sides.', 'Leave the top part empty to show the cup.', 'M72 112 Q96 101 120 109 Q143 116 169 108'],
+      ['Add boba pearls', 'Scatter little round pearls near the bottom.', 'Draw circles close to one another at the base, then add two shine marks higher up.', 'Mix small and medium circles.', 'M93 151 a7 7 0 1 0 0.1 0Z M109 158 a6 6 0 1 0 0.1 0Z M126 151 a8 8 0 1 0 0.1 0Z M143 159 a6 6 0 1 0 0.1 0Z M149 141 a6 6 0 1 0 0.1 0Z M110 138 a6 6 0 1 0 0.1 0Z', 'M83 87 l3 14 M89 87 l2 8'],
+    ],
+  },
+  {
+    id: 'daisy-rain-boot', title: 'Daisy rain boot', category: 'Fashion', minutes: 5, level: 2, skill: 'Curves & petals',
+    previewColors: [['#dba1ce', 0, 0], ['#a795cc', 1, 0], ['#bd9bd8', 1, 1], ['#edc06f', 2, 0]],
+    steps: [
+      ['Draw the boot', 'Draw a tall boot with a round toe.', 'Make the leg tall on the left. Turn the ankle and draw the toe pointing right.', 'Make the sole almost flat.', 'M67 48 Q99 54 133 47 L130 111 Q141 126 166 125 Q188 125 195 139 Q206 161 182 170 Q131 180 69 172 Q53 169 55 156 L61 113Z'],
+      ['Add the cuff and sole', 'Draw a band at the top and another at the bottom.', 'Follow the curve of the cuff, then make the bottom band wrap around the toe.', 'Connect both lines cleanly at the ends.', 'M67 48 Q100 42 133 47 L132 61 Q100 68 65 61Z M77 49 Q99 46 121 48', 'M56 151 Q105 168 195 151 Q196 166 182 171 Q129 180 68 172 Q53 169 55 157Z'],
+      ['Draw a daisy', 'Add a round center with little petals.', 'Put a little circle on the tall part of the boot. Make soft petals around it.', 'Turn your pencil around the center as you go.', 'M100 87 a7 7 0 1 0 0.1 0Z', 'M96 89 Q85 72 93 71 Q100 69 100 87 M104 89 Q115 74 120 81 Q123 88 107 93 M107 97 Q125 100 121 107 Q116 113 104 101 M101 101 Q105 120 96 117 Q90 114 97 100 M94 99 Q77 109 76 101 Q75 94 93 95 M94 92 Q77 89 80 82 Q85 75 98 88'],
+      ['Add the finishing marks', 'Draw little sole ridges and a toe shine.', 'Add short lines along the bottom and two soft curves above the toe.', 'Keep the shine marks close to one another.', 'M67 164 l2 7 M83 166 l1 8 M101 168 l1 7 M119 169 l0 6 M137 168 l-1 6 M155 166 l-1 7 M172 164 l-2 7', 'M154 137 q11-3 21 1 M161 142 q8-1 13 1 M75 77 L72 105'],
+    ],
+  },
+  {
     id: 'strawberry', title: 'Strawberry', category: 'Food', minutes: 5, level: 1, skill: 'Shape & pattern',
     steps: [
       ['Draw the berry', 'Draw a berry with round shoulders and a soft point.', 'Start with two round shoulders. Taper both sides into a soft point at the bottom.', 'Think of a heart with the dip at the top filled in.', 'M121 61 C171 37 192 72 177 111 C166 145 139 178 120 178 C101 178 74 145 63 111 C48 72 69 37 121 61Z'],

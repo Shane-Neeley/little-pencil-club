@@ -4,3 +4,5 @@
 .dev.vars
 .dev.vars.*
 *.tar.gz
+.venv/
+little-pencil-club-qr-cards.pdf

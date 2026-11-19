@@ -54,6 +54,18 @@ const coachIdeas = {
 
 const coachLessonIdeas = {
   'little-fox': 'Tuck two acorns beside the fox’s tail. Use ovals and tiny crosshatch caps.',
+  axolotl: 'Draw three bubbles floating up beside the axolotl.',
+  'berry-cupcake': 'Give your cupcake a little flag with a heart on it.',
+  'heart-sunglasses': 'Draw a tiny flower in the corner of each lens.',
+  'baby-penguin': 'Draw a little scarf flapping behind the penguin.',
+  'pancake-stack': 'Add a few blueberries beside the butter.',
+  'bow-backpack': 'Hang a little star charm from the zip.',
+  'tiny-hedgehog': 'Draw an apple balanced on the hedgehog’s back.',
+  'sprinkle-donut': 'Add a bite mark with three round bumps.',
+  'star-hoodie': 'Draw two little comets beside the star.',
+  'corgi-pup': 'Give the puppy a little name tag on its bandana.',
+  'boba-tea': 'Draw a smiling face on a sticker on the cup.',
+  'daisy-rain-boot': 'Draw a puddle and two small splashes by the toe.',
   strawberry: 'Draw a bite mark with three little scallops along one side of the berry.',
   'high-top': 'Turn one loose lace into a loop shaped like a rabbit ear.',
   mushroom: 'Add a smaller mushroom next to the big one. Give its cap only one spot.',

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Draw twelve new animals, treats, and outfits. Paper lessons put Back, Replay, and Next under the picture.
+- Meet Pencil Pal and print nine cut-out QR cards to share the drawing club with friends.
+
 ## November 19, 2026
 
 ### Bigger replays and brighter lessons (site-v3)
