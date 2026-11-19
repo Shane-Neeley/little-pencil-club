@@ -138,7 +138,7 @@ const drawExample = (() => {
     let data = pathsByLesson.get(lesson);
     if (!data) {
       data = {
-        stages: lesson.steps.map(([, , , ...paths]) => paths.map(path => ({
+        stages: lesson.steps.map(([, , , , ...paths]) => paths.map(path => ({
           data: path,
           path: new Path2D(path),
           animation: null,
@@ -250,7 +250,7 @@ const drawExample = (() => {
       const strokes = stages[index];
       if (options.guide) {
         const isCurrent = index === currentStep;
-        graphics.strokeStyle = isCurrent ? '#468a79' : '#6c7069';
+        graphics.strokeStyle = isCurrent ? '#7657c5' : '#3a3a48';
         graphics.globalAlpha = isCurrent ? 0.55 : 0.25;
         graphics.lineWidth = 1.25;
         graphics.setLineDash(isCurrent ? [2.5, 2] : []);
@@ -258,8 +258,9 @@ const drawExample = (() => {
         graphics.setLineDash([]);
       } else if (options.teaching) {
         const isCurrent = index === currentStep;
-        graphics.strokeStyle = isCurrent ? '#246b5b' : '#8a8274';
-        graphics.lineWidth = isCurrent ? 2 : 1.35;
+        graphics.strokeStyle = isCurrent ? '#e4572e' : '#3a3a48';
+        graphics.globalAlpha = isCurrent ? 1 : 0.5;
+        graphics.lineWidth = isCurrent ? 2.45 : 1.5;
         replay(graphics, strokes, isCurrent ? progress : 1);
       } else {
         pencil(graphics, strokes);

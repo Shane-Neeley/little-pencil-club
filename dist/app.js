@@ -11,8 +11,6 @@ const iconPaths = {
   box: '<rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 10h16m-10 4h4"/>',
   sparkle: '<path d="M12 2c.3 6.4 3.5 9.7 10 10-6.5.3-9.7 3.6-10 10-.3-6.4-3.5-9.7-10-10 6.5-.3 9.7-3.6 10-10Z"/>',
   check: '<path d="m5 12 4 4L19 6"/>',
-  trace: '<path stroke-dasharray="2 3" d="M4 17c0-8 4-13 8-13 5 0 7 7 8 15"/><path d="M9 14h7"/>',
-  paper: '<path d="M13 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10Zm0 0v7h7M8 14h8m-8 3h5"/>',
   eraser: '<path d="m3 14 8-9a2 2 0 0 1 3 0l6 6a2 2 0 0 1 0 3l-6 6H8l-5-4a1.5 1.5 0 0 1 0-2Zm4-4 9 8m-3 2h8"/>',
   undo: '<path d="m8 5-5 5 5 5m-5-5h11a5 5 0 0 1 0 10"/>',
   redo: '<path d="m16 5 5 5-5 5m5-5H10a5 5 0 0 0 0 10"/>',
@@ -30,10 +28,11 @@ const notice = document.querySelector('#notice');
 const lessonById = new Map(lessons.map(lesson => [lesson.id, lesson]));
 const drawings = new Map();
 const drawingModes = [
-  ['paper', 'paper', 'Paper'],
-  ['trace', 'trace', 'Trace'],
-  ['copy', 'pencil', 'Copy'],
+  ['paper', 'Paper'],
+  ['trace', 'Trace on screen'],
+  ['copy', 'Blank canvas'],
 ];
+const difficultyLabels = ['Easy', 'Medium', 'Challenge'];
 const width = 1000;
 const height = 690;
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
@@ -146,11 +145,20 @@ function paintCard(canvas) {
   }
 }
 
+function categoryStyle(name) {
+  const category = categories[name];
+  return category ? `style="--tint:${category.tint};--accent:${category.accent}"` : '';
+}
+
 function previewCard(lesson, book = false) {
   const data = dataFor(lesson);
-  const detail = book ? (data.completed ? 'Finished drawing' : 'In progress') : `${lesson.minutes} min · ${lesson.skill}`;
-  return `<a class="lesson-card" href="#${book && data.completed ? 'done' : 'draw'}/${lesson.id}">
-    <div class="card-picture" style="--tint:${categories[lesson.category].tint}">
+  const detail = book ? (data.completed ? 'Finished drawing' : 'In progress') : `
+    <span>${lesson.minutes} min</span>
+    <span class="difficulty" role="img" aria-label="${difficultyLabels[lesson.level - 1]} difficulty" title="${difficultyLabels[lesson.level - 1]} · ${lesson.skill}">
+      ${Array.from({ length: 3 }, (_, index) => `<span class="${index < lesson.level ? 'filled' : ''}">${icon('pencil')}</span>`).join('')}
+    </span>`;
+  return `<a class="lesson-card" ${categoryStyle(lesson.category)} href="#${book && data.completed ? 'done' : 'draw'}/${lesson.id}">
+    <div class="card-picture">
       <canvas class="picture-canvas" data-lesson="${lesson.id}" ${book ? 'data-ink="true"' : ''} aria-hidden="true"></canvas>
       ${data.completed ? `<span class="completion-mark" title="Lesson finished">${icon('check')}</span>` : ''}
     </div>
@@ -164,14 +172,13 @@ function renderLibrary() {
   main.innerHTML = `
     <section class="hero" aria-labelledby="home-title">
       <div class="hero-copy">
-        <h1 id="home-title">Pick up<br> <em>a pencil.</em></h1>
-        <p>Grab a pencil and paper. Learn to draw one little line at a time.</p>
+        <h1 id="home-title">Let’s <em>draw!</em></h1>
+        <p>Grab a pencil and paper.</p>
         <a class="primary" href="#draw/${fox.id}">${icon('pencil')} ${dataFor(fox).step && !dataFor(fox).completed ? 'Continue little fox' : 'Draw the little fox'}</a>
       </div>
       <div class="hero-art">
         <figure class="hero-sheet">
           <canvas class="picture-canvas" data-lesson="${fox.id}" data-hero="true" role="img" aria-label="Pencil sketch of a little fox with a curled tail"></canvas>
-          <figcaption>the little fox</figcaption>
         </figure>
         <span class="hero-pencil" aria-hidden="true"></span>
         <span class="hero-star hero-star-a">${icon('sparkle')}</span>
@@ -179,13 +186,12 @@ function renderLibrary() {
       </div>
     </section>
     <section class="library" aria-labelledby="library-title">
-      <div class="section-heading"><h2 id="library-title">Find your next drawing</h2><span id="lesson-count" class="count" aria-live="polite"></span></div>
+      <div class="section-heading"><h2 id="library-title">What will you draw?</h2><span id="lesson-count" class="count" aria-live="polite"></span></div>
       <div class="filters" aria-label="Filter lessons">
-        ${['All', ...Object.keys(categories)].map(category => `<button type="button" class="filter" data-filter="${category}" aria-pressed="${category === filter}">${icon(categories[category]?.glyph || 'grid')}${category}</button>`).join('')}
+        ${['All', ...Object.keys(categories)].map(category => `<button type="button" class="filter" ${categoryStyle(category)} data-filter="${category}" aria-pressed="${category === filter}">${icon(categories[category]?.glyph || 'grid')}${category}</button>`).join('')}
       </div>
       <div class="card-grid" id="lesson-cards"></div>
-    </section>
-    <p class="footer-note">Start anywhere. Draw at your own pace.</p>`;
+    </section>`;
   main.querySelector('.filters').addEventListener('click', event => {
     const button = event.target.closest('[data-filter]');
     if (!button || filter === button.dataset.filter) return;
@@ -243,12 +249,12 @@ function renderStudio(lesson, finished) {
   main.className = 'wrap studio';
   main.innerHTML = `
     <div class="lesson-heading">
-      <div>
-        <a class="trail" href="#lessons">${icon(categories[lesson.category].glyph)} Lesson library</a>
-        <h1>${lesson.title}</h1>
-      </div>
-      <div class="mode-group" aria-label="Drawing mode">
-        ${drawingModes.map(([mode, glyph, label]) => toolButton(glyph, mode === 'paper' ? 'Draw on paper' : `${label} on screen`, `mode-${mode}`, label, mode === data.drawingMode)).join('')}
+      <h1>${lesson.title}</h1>
+      <div class="mode-control">
+        <label class="sr-only" for="drawing-mode">Drawing mode</label>
+        <select id="drawing-mode">
+          ${drawingModes.map(([mode, label]) => `<option value="${mode}" ${mode === data.drawingMode ? 'selected' : ''}>${label}</option>`).join('')}
+        </select>
       </div>
     </div>
     <div class="studio-grid">
@@ -265,13 +271,12 @@ function renderStudio(lesson, finished) {
           ${toolButton('save', 'Save drawing as PNG', 'save', 'Save')}
         </div>
         <div class="surface">
-          <span class="surface-tag"></span>
           <canvas id="guide" aria-hidden="true"></canvas>
           <canvas id="ink" aria-label="Drawing area. Draw with an Apple Pencil, finger, or mouse."></canvas>
         </div>
+        <button class="board-replay secondary" type="button" data-action="replay" hidden>${icon('play')}Replay</button>
         <div class="board-foot">
-          <span id="input-caption">Apple Pencil, finger or mouse</span>
-          <label id="pencil-only-control"><input type="checkbox" id="pencil-only" ${pencilOnly ? 'checked' : ''}>Pencil only</label>
+          <label><input type="checkbox" id="pencil-only" ${pencilOnly ? 'checked' : ''}>Pencil only</label>
         </div>
       </div>
       <section class="lesson-panel" aria-label="Drawing instructions"></section>
@@ -287,6 +292,15 @@ function renderStudio(lesson, finished) {
       </form>
     </dialog>`;
   session.canvas = document.querySelector('#ink');
+  session.guide = document.querySelector('#guide');
+  main.querySelector('#drawing-mode').addEventListener('change', event => {
+    if (session.stroke) endStroke();
+    session.data.drawingMode = event.target.value;
+    updateTools();
+    repaintInk();
+    redrawReferences();
+    persist();
+  });
   session.canvas.addEventListener('pointerdown', startStroke);
   session.canvas.addEventListener('pointermove', moveStroke);
   ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(name => session.canvas.addEventListener(name, endStroke));
@@ -336,7 +350,7 @@ function renderPanel() {
       </div>`;
     return;
   }
-  const [title, instruction, hint] = lesson.steps[data.step];
+  const [title, instruction, guidance, hint] = lesson.steps[data.step];
   panel.innerHTML = `
     <div class="step-progress">
       <span class="step-count">Step ${data.step + 1} of ${lesson.steps.length}</span>
@@ -344,13 +358,13 @@ function renderPanel() {
         ${lesson.steps.map(([name], index) => `<button type="button" class="${index < data.step ? 'is-past' : ''}" data-action="step-${index}" aria-label="Step ${index + 1}, ${name}" ${index === data.step ? 'aria-current="step"' : ''}>${index + 1}</button>`).join('')}
       </div>
     </div>
-    <button class="demo" type="button" data-action="replay" aria-label="Replay stroke" title="Replay stroke">
+    <button class="demo" type="button" data-action="replay" aria-label="Replay stroke" title="Replay stroke" ${data.drawingMode === 'paper' ? 'hidden' : ''}>
       <canvas id="step-example" aria-hidden="true"></canvas>
       <span class="replay" aria-hidden="true">${icon('play')}</span>
     </button>
     <h2 class="step-heading" tabindex="-1">${title}</h2>
     <p class="step-text">${instruction}</p>
-    <details class="hint"><summary>Pencil tip</summary><p>${hint}</p></details>
+    <details class="hint"><summary>Pencil tip</summary><p>${guidance}</p><p>${hint}</p></details>
     <div class="step-actions">
       <button type="button" class="secondary" data-action="back" ${data.step === 0 ? 'disabled' : ''}>Back</button>
       <button type="button" class="primary" data-action="next">${data.step === lesson.steps.length - 1 ? 'Finish drawing' : 'Next step'}</button>
@@ -358,22 +372,23 @@ function renderPanel() {
   observer.observe(document.querySelector('#step-example'));
 }
 
-function redrawDemo(progress = session?.progress) {
-  const canvas = document.querySelector('#step-example');
-  if (session && canvas) {
-    drawExample(canvas, session.lesson, session.data.step, { teaching: true, progress });
+function redrawDemo() {
+  if (!session) return;
+  const { data, lesson, finished, guide, progress } = session;
+  if (data.drawingMode === 'paper') {
+    const step = finished ? lesson.steps.length - 1 : data.step;
+    drawExample(guide, lesson, step, { teaching: !finished, progress, scale: 1.1 });
+    return;
   }
+  const canvas = document.querySelector('#step-example');
+  if (canvas) drawExample(canvas, lesson, data.step, { teaching: true, progress });
 }
 
 function redrawReferences() {
   if (!session) return;
-  const { lesson, data, finished } = session;
-  const guide = document.querySelector('#guide');
-  const step = finished ? lesson.steps.length - 1 : data.step;
-  if (data.drawingMode === 'paper') {
-    drawExample(guide, lesson, step, { teaching: !finished, decorative: finished, scale: 1.02 });
-  } else {
-    drawExample(guide, lesson, data.drawingMode === 'trace' && !finished ? step : -1, { guide: true });
+  const { lesson, data, finished, guide } = session;
+  if (data.drawingMode !== 'paper') {
+    drawExample(guide, lesson, data.drawingMode === 'trace' && !finished ? data.step : -1, { guide: true });
   }
   redrawDemo();
 }
@@ -402,7 +417,10 @@ function updateTools() {
   const { data, tool, redo } = session;
   const paper = data.drawingMode === 'paper';
   const setPressed = (action, pressed) => main.querySelector(`[data-action="${action}"]`).setAttribute('aria-pressed', String(pressed));
-  drawingModes.forEach(([mode]) => setPressed(`mode-${mode}`, data.drawingMode === mode));
+  main.querySelector('.studio-grid').classList.toggle('is-paper', paper);
+  const demo = main.querySelector('.demo');
+  if (demo) demo.hidden = paper;
+  main.querySelector('.board-replay').hidden = !paper || session.finished;
   setPressed('pencil', tool === 'pencil');
   setPressed('eraser', tool === 'eraser');
   main.querySelector('[data-action="undo"]').disabled = !data.strokes.length;
@@ -412,11 +430,7 @@ function updateTools() {
   session.canvas.hidden = paper;
   session.canvas.style.cursor = tool === 'eraser' ? 'cell' : 'crosshair';
   main.querySelector('.board-head').hidden = paper;
-  main.querySelector('#pencil-only-control').hidden = paper;
-  main.querySelector('#input-caption').textContent = paper
-    ? 'Follow along with your pencil and paper'
-    : pencilOnly ? 'Apple Pencil only on the canvas' : 'Apple Pencil, finger or mouse';
-  main.querySelector('.surface-tag').textContent = paper ? 'Follow this example' : 'Your drawing';
+  main.querySelector('.board-foot').hidden = paper;
 }
 
 function setStep(index) {
@@ -436,6 +450,7 @@ function finishLesson() {
   history.replaceState(null, '', `#done/${session.lesson.id}`);
   cancelAnimationFrame(session.animation);
   renderPanel();
+  updateTools();
   redrawReferences();
   main.querySelector('.finish-title').focus({ preventScroll: true });
 }
@@ -444,6 +459,7 @@ function keepDrawing() {
   session.finished = false;
   history.replaceState(null, '', `#draw/${session.lesson.id}`);
   renderPanel();
+  updateTools();
   redrawReferences();
   playDemo();
   main.querySelector('.step-heading').focus({ preventScroll: true });
@@ -452,14 +468,7 @@ function keepDrawing() {
 function studioClick(event) {
   const action = event.target.closest('[data-action]')?.dataset.action;
   if (!session || !action) return;
-  if (action.startsWith('mode-')) {
-    if (session.stroke) endStroke();
-    session.data.drawingMode = action.slice(5);
-    updateTools();
-    repaintInk();
-    redrawReferences();
-    persist();
-  } else if (action.startsWith('step-')) {
+  if (action.startsWith('step-')) {
     setStep(Number(action.slice(5)));
   } else {
     const actions = {
@@ -631,7 +640,7 @@ function savePng() {
   inkContext.scale(1.6, 1.6);
   session.data.strokes.forEach(stroke => drawStroke(inkContext, stroke));
   const ctx = drawing.getContext('2d');
-  ctx.fillStyle = '#fffdf5';
+  ctx.fillStyle = '#fffdf7';
   ctx.fillRect(0, 0, drawing.width, drawing.height);
   ctx.drawImage(ink, 0, 0);
   const name = `${session.lesson.id}-sketch.png`;

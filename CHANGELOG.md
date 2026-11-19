@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Watch and replay each new stroke right on the big Paper example.
+- Find lessons by color and spot the yellow Next step button at a glance. Extra directions are tucked into Pencil tip.
+
 ## November 18, 2026
 
 ### Paper mode by default (site-v2)
