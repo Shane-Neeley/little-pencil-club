@@ -1,0 +1,76 @@
+'use strict';
+
+// Short, ready-to-play prompts that work entirely on the drawing device.
+const coachIdeas = {
+  Animals: [
+    'Add four tiny paw prints leading off the page.',
+    'Draw a round snack beside your animal. Add one little bite mark.',
+    'Give your animal a miniature scarf with a zigzag pattern.',
+    'Draw two tufts of grass. Make one taller than the other.',
+    'Sketch a long oval shadow under your animal. Shade one side.',
+    'Draw a smaller animal friend beside it using the same big shapes.',
+  ],
+  Food: [
+    'Float three tiny stars around your treat.',
+    'Draw a plate under your food using two wide ovals.',
+    'Give the plate a rim made of alternating dots and dashes.',
+    'Add a curled ribbon above your food with two long, wavy lines.',
+    'Draw a little paper flag with a shape you can invent.',
+    'Add three crumbs. Make each one a different shape.',
+  ],
+  Fashion: [
+    'Design a pocket patch using only three simple shapes.',
+    'Make a stripe pattern that follows the curves of the fabric.',
+    'Add a tiny tag with a star in the middle.',
+    'Draw three rows of stitches, each in a different direction.',
+    'Draw a smaller matching accessory beside your design.',
+    'Invent a print using just dots, triangles and half moons.',
+  ],
+  Nature: [
+    'Add three dew drops. Leave a white spot inside each one.',
+    'Draw a curly breeze passing behind your subject.',
+    'Sketch a fallen leaf nearby. Give it three branches on each side.',
+    'Put a tiny snail in a corner. Start its shell with a spiral.',
+    'Draw three small rocks. Shade the bottom of each rock.',
+    'Draw a little sprout nearby with two leaves reaching opposite ways.',
+  ],
+  Things: [
+    'Invent a tiny sticker for your object and fill it with stripes.',
+    'Draw the same object much smaller in one corner.',
+    'Add a dotted pattern to one surface, leaving the other surfaces plain.',
+    'Draw a soft shadow beneath your object using light diagonal strokes.',
+    'Sketch a little sign beside it with a drawing instead of words.',
+    'Add a highlight using three short parallel lines near an edge.',
+  ],
+  Fantasy: [
+    'Draw a tiny glowing doorway made from a tall arch and an oval handle.',
+    'Scatter three shooting stars with tails pointing different ways.',
+    'Hide a tiny crown somewhere in your drawing.',
+    'Draw a little cloud shaped like a sleeping creature.',
+    'Add a trail of floating bubbles that get smaller as they rise.',
+    'Draw a tiny moon with a wobbly ring around it.',
+  ],
+};
+
+const coachLessonIdeas = {
+  'little-fox': 'Tuck two acorns beside the fox’s tail. Use ovals and tiny crosshatch caps.',
+  strawberry: 'Draw a bite mark with three little scallops along one side of the berry.',
+  'high-top': 'Turn one loose lace into a loop shaped like a rabbit ear.',
+  mushroom: 'Add a smaller mushroom next to the big one. Give its cap only one spot.',
+  'sleepy-cat': 'Draw a tiny fish inside a dream bubble above the cat.',
+  'swirl-cone': 'Add one melting drip to the scoop with a narrow U shape.',
+  'bow-dress': 'Draw a line of tiny daisies that curves along the skirt hem.',
+  bunny: 'Add a tiny carrot between the paws using a tapered triangle and three leaves.',
+  avocado: 'Draw two little leaf shapes and a pitted stem beside the peel.',
+  sunflower: 'Draw a bee beside a petal. Use one oval, two wings and three stripes.',
+  'camp-mug': 'Draw a small crescent floating in the steam above the mug.',
+  'tiny-dragon': 'Draw a tiny cloud of smoke made of three round bumps near the snout.',
+  'pond-turtle': 'Place a little lily pad near the turtle. Draw an oval with a wedge missing.',
+  camera: 'Sketch a bright flash beside the camera with a pointy four-sided star.',
+  'cozy-beanie': 'Pick one row of stitches and draw a repeating diamond band.',
+  'moon-moth': 'Put a pair of tiny matching star dots on each wing near the tips.',
+  'pizza-slice': 'Add a mushroom topping with a little dome and a short stem.',
+  'cloud-ship': 'Draw a small telescope poking over the rail using two narrow rectangles.',
+  'roller-skate': 'Add three swooping speed lines behind the wheels.',
+  'little-owl': 'Draw a hanging leaf beneath the branch with a zigzag vein.',
+};
