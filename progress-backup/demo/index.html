@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Little Pencil Club progress backup test</title>
+  <script type="module" src="/demo/demo.mjs"></script>
+  <main>
+    <h1>Progress backup test</h1>
+    <p>Use the sample lessons to test saving and restoring progress across browser sessions.</p>
+    <fieldset id="lessons">
+      <legend>Completed on this device</legend>
+      <label><input type="checkbox" value="sample-fox"> Sample fox</label>
+      <label><input type="checkbox" value="sample-cupcake"> Sample cupcake</label>
+      <label><input type="checkbox" value="sample-owl"> Sample owl</label>
+    </fieldset>
+    <p><button type="button" data-action="save">Save a backup</button></p>
+    <p id="new-backup" hidden>
+      <label>New recovery code <input id="new-code" type="text" readonly autocomplete="off"></label>
+      <span id="expiry"></span>
+    </p>
+    <p><label>Recovery code <input id="recover-code" type="password" maxlength="64" autocomplete="off" spellcheck="false" autocapitalize="off"></label></p>
+    <p>
+      <button type="button" data-action="restore">Bring back my progress</button>
+      <button type="button" data-action="revoke">Delete backup</button>
+    </p>
+    <p id="status" role="status"></p>
+  </main>
+</html>
