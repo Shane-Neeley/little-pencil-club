@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'none'; script-src 'self'; style-src 'self'; img-src blob:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+  <title>Keep a paper drawing · Little Pencil Club</title>
+  <link rel="stylesheet" href="style.css">
+  <script defer src="paper-photo.js"></script>
+</head>
+<body>
+  <main>
+    <header>
+      <p class="brand">Little Pencil Club</p>
+      <h1>Keep a paper drawing</h1>
+      <p class="local">Your saved copy stays in this browser.</p>
+    </header>
+    <p class="notice" id="notice" role="status"></p>
+
+    <section class="start panel" id="start" aria-labelledby="start-heading">
+      <div class="viewfinder" aria-hidden="true">
+        <span class="sheet"><span class="pencil-marks"></span></span>
+      </div>
+      <div class="start-copy">
+        <h2 id="start-heading">Get your drawing in the frame</h2>
+        <p>Lay it flat and leave a little space around the edges.</p>
+      </div>
+    </section>
+
+    <section class="editor panel" id="editor" aria-labelledby="crop-heading" hidden>
+      <h2 id="crop-heading" tabindex="-1">Crop your photo</h2>
+      <p id="crop-help">Drag the corners around the part you want to keep.</p>
+      <p class="sr-only" id="crop-keyboard">Use the arrow keys to move a corner.</p>
+      <div class="stage" id="stage">
+        <canvas id="photo" role="img" aria-label="Preview of your selected photo"></canvas>
+        <div class="mask" aria-hidden="true"><div class="crop-frame" id="crop-frame"></div></div>
+        <button type="button" class="handle" data-x="left" data-y="top" aria-label="Top left crop corner" aria-describedby="crop-keyboard"></button>
+        <button type="button" class="handle" data-x="right" data-y="top" aria-label="Top right crop corner" aria-describedby="crop-keyboard"></button>
+        <button type="button" class="handle" data-x="left" data-y="bottom" aria-label="Bottom left crop corner" aria-describedby="crop-keyboard"></button>
+        <button type="button" class="handle" data-x="right" data-y="bottom" aria-label="Bottom right crop corner" aria-describedby="crop-keyboard"></button>
+      </div>
+      <p id="replace-hint" class="local" hidden>Saving this crop replaces the saved copy in this browser.</p>
+      <div class="actions">
+        <button type="button" class="primary" id="save" disabled>Save here</button>
+        <button type="button" id="reset">Reset crop</button>
+        <button type="button" id="cancel">Cancel</button>
+      </div>
+    </section>
+
+    <div class="actions sources">
+      <button type="button" class="primary" id="take" disabled>
+        <span class="icon camera" aria-hidden="true"></span><span id="take-label">Take a photo</span>
+      </button>
+      <button type="button" id="choose" disabled>
+        <span class="icon pictures" aria-hidden="true"></span><span id="choose-label">Choose a photo</span>
+      </button>
+      <input id="capture" type="file" accept="image/*" capture="environment" hidden>
+      <input id="picker" type="file" accept="image/*" hidden>
+    </div>
+    <p class="local picker-hint" id="picker-hint">If Camera is unavailable, choose a photo from your device.</p>
+    <noscript><p>Turn on JavaScript to crop and keep a photo.</p></noscript>
+
+    <section class="saved panel" id="saved" aria-labelledby="saved-heading" hidden>
+      <h2 id="saved-heading" tabindex="-1">Your saved drawing</h2>
+      <img id="saved-image" alt="Your cropped paper drawing">
+      <div class="actions">
+        <a class="primary button" id="download" download="paper-drawing.png">Download PNG</a>
+        <button type="button" id="delete">Delete saved drawing</button>
+      </div>
+    </section>
+
+    <dialog id="delete-dialog" aria-labelledby="delete-title" aria-describedby="delete-copy">
+      <form method="dialog">
+        <h2 id="delete-title">Delete this saved drawing?</h2>
+        <p id="delete-copy">This removes the copy stored here. Any PNG you downloaded stays where you saved it.</p>
+        <div class="actions">
+          <button value="cancel" autofocus>Keep it</button>
+          <button class="danger" value="delete">Delete drawing</button>
+        </div>
+      </form>
+    </dialog>
+  </main>
+</body>
+</html>
