@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Make nine Little Pencil Club QR cards and an optional offline exercise."""
+"""Make generic public QR cards or a standalone offline pencil exercise."""
 
 import argparse
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import unquote, urlsplit
 
 import qrcode
 from qrcode.exceptions import DataOverflowError
@@ -15,7 +15,7 @@ from reportlab.pdfgen.canvas import Canvas
 from svglib.svglib import svg2rlg
 
 
-SITE_URL = "https://little-pencil-club.fort-rock.chatgpt.site/"
+HELD_HOST = "little-pencil-club.fort-rock.chatgpt.site"
 LOGO = Path(__file__).resolve().parent.parent / "dist" / "logo.svg"
 QR_SIZE = 113
 TRIM_MARGIN = 27
@@ -41,6 +41,8 @@ def site_address(value):
         or port == 0
     ):
         raise argparse.ArgumentTypeError("enter an HTTP or HTTPS site URL without credentials")
+    if unquote(parts.hostname).lower().rstrip(".") == HELD_HOST:
+        raise argparse.ArgumentTypeError("the previous test host is on a school-distribution hold")
     return value
 
 
@@ -99,23 +101,12 @@ def draw_card(pdf, x, y, width, height, matrix, url, logo):
     pdf.drawCentredString(center, y + 181, "Draw with me!")
 
     qr_x = center - QR_SIZE / 2
-    qr_y = y + 54
+    qr_y = y + 47
     draw_qr(pdf, matrix, qr_x, qr_y)
     pdf.linkURL(url, (qr_x, qr_y, qr_x + QR_SIZE, qr_y + QR_SIZE))
 
-    pdf.setFont(BOLD, 9)
-    pdf.drawCentredString(center, y + 42, "Open Camera and tap the link")
-    address_scale = 87
-    address_width = stringWidth(url, FONT, 8.5) * address_scale / 100
-    if address_width <= width - 16:
-        pdf.setFont(BOLD, 8)
-        pdf.drawCentredString(center, y + 27, "Or type in Safari")
-        address = pdf.beginText(center - address_width / 2, y + 14)
-        address.setFont(FONT, 8.5)
-        address.setHorizScale(address_scale)
-        address.textOut(url)
-        pdf.drawText(address)
-        pdf.linkURL(url, (center - address_width / 2, y + 11, center + address_width / 2, y + 23))
+    pdf.setFont(BOLD, 10)
+    pdf.drawCentredString(center, y + 22, "Open Camera and tap the link")
 
 
 def draw_cut_lines(pdf, card_width, card_height):
@@ -213,38 +204,43 @@ def write_exercise(output):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--url", type=site_address, default=SITE_URL,
-        help="published URL for a fork (omit for the school handout)",
-    )
-    parser.add_argument("--output", type=Path, default=Path("little-pencil-club-qr-cards.pdf"), help="output PDF path")
-    parser.add_argument("--fallback-output", type=Path, help="optional one-page offline exercise PDF path")
+    parser.add_argument("--url", type=site_address, help="explicit public fork or reserved test URL required for QR cards")
+    parser.add_argument("--output", type=Path, help="output PDF path for QR cards")
+    parser.add_argument("--fallback-output", type=Path, help="one-page offline exercise PDF path")
     args = parser.parse_args()
-    if args.output.suffix.lower() != ".pdf":
-        parser.error("--output must end in .pdf")
-    if args.fallback_output:
-        if args.fallback_output.suffix.lower() != ".pdf":
-            parser.error("--fallback-output must end in .pdf")
-        if args.fallback_output.resolve() == args.output.resolve():
-            parser.error("--fallback-output must differ from --output")
-    if not LOGO.is_file():
-        parser.error(f"missing logo asset: {LOGO}")
+
+    cards_output = args.output
+    exercise_output = args.fallback_output
+    if args.url is not None:
+        cards_output = cards_output or Path("little-pencil-club-qr-cards.pdf")
+    elif cards_output is not None or exercise_output is None:
+        parser.error("--url is required to generate QR cards")
+
+    for option, output in (("--output", cards_output), ("--fallback-output", exercise_output)):
+        if output is not None and output.suffix.lower() != ".pdf":
+            parser.error(f"{option} must end in .pdf")
+    if cards_output and exercise_output and cards_output.resolve() == exercise_output.resolve():
+        parser.error("--fallback-output must differ from --output")
 
     try:
         registerFont(TTFont(FONT, "Vera.ttf"))
         registerFont(TTFont(BOLD, "VeraBd.ttf"))
-        matrix = qr_matrix(args.url)
-        logo = svg2rlg(str(LOGO), color_converter=grayscale)
-        if logo is None or min(logo.width, logo.height) <= 0:
-            parser.error("dist/logo.svg must contain a nonempty SVG logo")
-        write_cards(args.output, args.url, matrix, logo)
-        if args.fallback_output:
-            write_exercise(args.fallback_output)
+        if cards_output:
+            matrix = qr_matrix(args.url)
+            if not LOGO.is_file():
+                parser.error(f"missing logo asset: {LOGO}")
+            logo = svg2rlg(str(LOGO), color_converter=grayscale)
+            if logo is None or min(logo.width, logo.height) <= 0:
+                parser.error("dist/logo.svg must contain a nonempty SVG logo")
+            write_cards(cards_output, args.url, matrix, logo)
+        if exercise_output:
+            write_exercise(exercise_output)
     except (DataOverflowError, ValueError, OSError) as error:
-        parser.error(str(error) or "unable to write QR cards for this URL")
-    print(f"Wrote nine printable QR cards to {args.output}")
-    if args.fallback_output:
-        print(f"Wrote a one-page pencil exercise to {args.fallback_output}")
+        parser.error(str(error) or "unable to write printable PDF")
+    if cards_output:
+        print(f"Wrote nine printable QR cards to {cards_output}")
+    if exercise_output:
+        print(f"Wrote a one-page pencil exercise to {exercise_output}")
 
 
 if __name__ == "__main__":

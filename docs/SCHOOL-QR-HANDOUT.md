@@ -1,46 +1,47 @@
-# School QR handout
+# School handout and QR tools
 
-[School QR and first-draw issue #4](https://github.com/Shane-Neeley/little-pencil-club/issues/4)
+[School handout and first-draw issue #4](https://github.com/Shane-Neeley/little-pencil-club/issues/4)
 
-## Print and use
+## Private classroom invitations
 
-- [Pencil Pal cards](print/pencil-pal-cards.pdf) — nine cards on one US Letter sheet. Select **Actual size (100%)** in the print dialog and cut along the dotted lines.
-- [Light and dark pencil practice](print/pencil-practice.pdf) — one black-and-white US Letter page for a blocked network. A pencil is enough to follow the examples and draw a leaf.
-- On iPad, open Camera, aim at the code, and tap the link. If Camera is unavailable, type `https://little-pencil-club.fort-rock.chatgpt.site/` in Safari. Tap **Draw the little fox** and follow the first mark on paper.
+The planned school cards are private classroom invitations. They use the QR code as the only link and are intended to open the class gallery directly, without a printed address, typing, sign-in, or a separate Join step. School distribution remains on hold while hosting and the private invitation flow are verified.
 
-## Verified on November 20, 2026
+The existing public drawing game is separate. Retire the earlier public-game cards from school use. Keep live class invite URLs and printable invitation sheets out of GitHub and Library.
 
-- **PDFs** — Both are one US Letter page. All nine codes decoded from a 150 dpi grayscale render to the exact public game URL printed on the cards. The nine QR links and nine text links have that same destination. Visual review confirmed the text, cut lines, and practice marks are legible in grayscale.
-- **Emulated browser** — Playwright WebKit 26.5 with clean iPad Pro 11 touch profiles at 834 × 1194 and 1194 × 834. Navigation using the address extracted from the PDF returned the live game. One tap opened Paper mode and showed the first marked example, “Sketch the head.” Replay, Next, and Back worked in both orientations. A simulated camera denial did not block the route. The lesson opened without sign-in, a tour, or an Apple Pencil.
-- **Paper finish** — The live build said “Little fox is in your sketchbook.” Confirm the progress-versus-physical-drawing wording again when the lesson change is available.
-- **School device check pending** — Print a card at 100% and scan it using the Camera on a school-managed iPad on its normal network. Open Safari with a clean session and check the typed address with Camera disabled. Verify that a paper-and-pencil learner can reach the first example in portrait and landscape. The physical print, Camera scan, device policies, and school network still need that check.
+## Offline exercise
 
-## Regenerate and verify
-
-Use the default public destination for the school handout. The generator’s custom URL option is for published forks.
+The [light and dark pencil practice](print/pencil-practice.pdf) is a black-and-white US Letter page that needs only a pencil. It can be regenerated on its own.
 
 ```sh
 python3 -m venv .venv
 .venv/bin/python -m pip install -r scripts/requirements-qr.txt
 .venv/bin/python scripts/generate_qr_cards.py \
-  --output docs/print/pencil-pal-cards.pdf \
   --fallback-output docs/print/pencil-practice.pdf
 ```
 
-To recheck the rendered QR payloads with Poppler and ZXing:
+## Optional public QR tool
+
+The generic nine-card generator is available for public forks and local layout checks. It requires an explicit `--url` and rejects the held ChatGPT Sites test destination. The layout prints a QR code and a scan hint, with one PDF link over each code.
+
+Use a reserved address to verify the generic layout. Keep the fixture out of distribution.
 
 ```sh
+qa_dir="$(mktemp -d)"
 .venv/bin/python -m pip install zxing-cpp
-pdftoppm -r 150 -gray -png -singlefile docs/print/pencil-pal-cards.pdf /tmp/pencil-pal-cards
-.venv/bin/python - <<'PY'
+.venv/bin/python scripts/generate_qr_cards.py \
+  --url https://example.invalid/little-pencil-club/ \
+  --output "$qa_dir/qr-fixture.pdf"
+pdftoppm -r 150 -gray -png -singlefile "$qa_dir/qr-fixture.pdf" "$qa_dir/qr-fixture"
+.venv/bin/python - "$qa_dir/qr-fixture.png" <<'PY'
+import sys
+
 from PIL import Image
 import zxingcpp
 
 codes = zxingcpp.read_barcodes(
-    Image.open("/tmp/pencil-pal-cards.png"),
-    formats=zxingcpp.BarcodeFormat.QRCode,
+    Image.open(sys.argv[1]), formats=zxingcpp.BarcodeFormat.QRCode
 )
 assert len(codes) == 9
-assert {code.text for code in codes} == {"https://little-pencil-club.fort-rock.chatgpt.site/"}
+assert {code.text for code in codes} == {"https://example.invalid/little-pencil-club/"}
 PY
 ```
