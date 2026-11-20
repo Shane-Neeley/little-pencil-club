@@ -503,7 +503,7 @@ function playDemo() {
     return;
   }
   const active = session;
-  const duration = active.data.foxActivity === 'marks' ? 1700 : active.data.foxActivity === 'tail' ? 1400 : 980;
+  const duration = active.data.foxActivity === 'marks' ? 3400 : active.data.foxActivity === 'tail' ? 2800 : 1960;
   const start = performance.now();
   function frame(now) {
     if (session !== active || active.finished) return;
