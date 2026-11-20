@@ -1,6 +1,6 @@
 # Little Pencil Club roadmap
 
-Little Pencil Club is a paper-first drawing game for **ages 5–10**. Build for a child to start on their own, learn a move they can reuse, and end with a drawing that feels like theirs. The order below is a priority list, not a release promise.
+Little Pencil Club is a paper-first drawing game for beginners, including teens who are new to drawing. Build for a learner to start on their own, learn a move they can reuse, and end with a drawing that feels like theirs. The order below is a priority list, not a release promise.
 
 **iPad-first design:** Open with a joyful paper-and-pencil cue (“Grab your paper, kids!”), not a modal, and celebrate drawing with real hands away from the screen. Audio, including any later optional narration, must have a silent equivalent and never autoplay or gate the first mark. Drawing fills the screen; each step has one obvious next action, large touch targets, and a way to replay or recover. A child should not have to read button labels or notes to get started. No dashboard or tour. See the [iPad lesson design and Simply Draw visual references](docs/IPAD-LESSONS.md).
 
@@ -15,7 +15,7 @@ Little Pencil Club is a paper-first drawing game for **ages 5–10**. Build for 
 
 ## Unified ranked backlog
 
-**Partial** means a relevant foundation exists; **missing** means the proposed capability was not found in the current repo; **verify** means current coverage needs a focused check. Checked means shipped, not merely scoped. Ranked for first-mark speed on school iPads, useful drawing practice for ages 5–10, dependencies, and privacy. Ranks are not issue IDs. An independent learning/product review and a separate rollout/security review informed this order. Test the first mark separately from private handout distribution; on a verified host, the private classroom QR must open its gallery directly. Keep the D1 classroom proof separate, with synthetic data only. Keep a standalone no-account drawing test while private class access is held. No uploads, AI, paywall, app install, mandatory walkthrough or adult toggle in that test.
+**Partial** means a relevant foundation exists; **missing** means the proposed capability was not found in the current repo; **verify** means current coverage needs a focused check. Checked means shipped, not merely scoped. Ranked for first-mark speed, useful beginner drawing practice, dependencies, and privacy. The original elementary pilot was scoped for ages 5–10; it is a held school rollout, not a requirement for beginner lessons or a public launch. Ranks are not issue IDs. An independent learning/product review and a separate rollout/security review informed this order. Test the first mark separately from private handout distribution; on a verified host, the private classroom QR must open its gallery directly. Keep the D1 classroom proof separate, with synthetic data only. Keep a standalone no-account drawing test while private class access is held. No uploads, AI, paywall, app install, mandatory walkthrough or adult toggle in that test.
 
 ### First school QR pilot
 
