@@ -1,6 +1,8 @@
 # Little Pencil Club
 
-[Open Little Pencil Club](https://little-pencil-club.fort-rock.chatgpt.site/) in Safari on iPad or in a modern desktop or mobile browser. Start with **Little fox**, or choose from 32 lessons in Animals, Food, Fashion, Nature, Things, and Fantasy.
+[Run Little Pencil Club locally](#run-locally) in a modern browser. Start with **Little fox**, or choose from 32 lessons in Animals, Food, Fashion, Nature, Things, and Fantasy.
+
+**School hosting and distribution are on hold** while a compatible host and the private classroom invitation flow are verified.
 
 - Lessons open in **Paper** mode with a large animated example. Follow along on paper with **Back**, **Replay**, and **Next** below the picture.
 - For drawing on screen, choose **Trace on screen** or **Blank canvas** in the mode menu. Open **Pencil tip** for detailed help.
@@ -19,7 +21,7 @@ With Python 3 installed, run this command from the checkout and open [the local 
 python3 -m http.server 8473 --bind 127.0.0.1 --directory dist
 ```
 
-The app uses plain HTML, CSS, and JavaScript. ChatGPT Sites serves `dist/` directly. Lesson instructions and art paths live in `dist/lessons.js`, and the same art paths drive the previews, replays, and tracing guides. To check syntax with Node.js, run:
+The game files in `dist/` use plain HTML, CSS, and JavaScript. Lesson instructions and art paths live in `dist/lessons.js`, and the same art paths drive the previews, replays, and tracing guides. To check syntax with Node.js, run:
 
 ```sh
 for file in dist/*.js; do
