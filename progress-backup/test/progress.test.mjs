@@ -7,6 +7,7 @@ import { before, beforeEach, after, test } from 'node:test';
 import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 import { activateDemo } from '../demo/demo.mjs';
+import worker from '../src/worker.mjs';
 
 const deps = process.env.PROGRESS_TEST_DEPS;
 if (!deps) throw new Error('Set PROGRESS_TEST_DEPS to the directory containing the test dependencies.');
@@ -19,8 +20,10 @@ const root = new URL('../', import.meta.url);
 const origin = 'https://progress-prototype.test';
 const gameOrigin = 'https://little-pencil-fixture.test';
 const api = '/progress-backup/v1/';
+const unrelatedDrawingKey = 'little-pencil-club/progress-fixture-drawing';
 const localKey = 'little-pencil-club/progress-backup-prototype';
 const saveBody = { version: 1, completed: ['sample-fox'] };
+const enabledBindings = { PROGRESS_BACKUP_ENABLED: 'true' };
 let mf;
 let db;
 let browser;
@@ -31,8 +34,11 @@ before(async () => {
     modulesRoot: fileURLToPath(new URL('src/', root)),
     scriptPath: fileURLToPath(new URL('src/worker.mjs', root)),
     compatibilityDate: '2026-07-30',
+    bindings: enabledBindings,
     d1Databases: { PROGRESS_DB: 'progress-prototype' },
     d1Persist: false,
+    logRequests: false,
+    unsafeTriggerHandlers: true,
   });
   db = await mf.getD1Database('PROGRESS_DB');
   const migration = await readFile(new URL('migrations/0001_progress.sql', root), 'utf8');
@@ -57,6 +63,14 @@ function request(action, body, options = {}) {
     method,
     headers: { Origin: origin, 'Content-Type': 'application/json', ...headers },
     body: method === 'GET' ? undefined : raw ?? JSON.stringify(body),
+  });
+}
+
+function workerRequest(action, body) {
+  return new Request(origin + api + action, {
+    method: 'POST',
+    headers: { Origin: origin, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
   });
 }
 
@@ -90,6 +104,11 @@ const demoFiles = new Map([
   ['/src/lessons.mjs', ['src/lessons.mjs', 'text/javascript']],
 ]);
 
+async function demoHtml(enabled) {
+  const html = await readFile(new URL('demo/index.html', root), 'utf8');
+  return enabled ? html.replace('<html lang="en">', '<html lang="en" data-progress-backup="enabled">') : html;
+}
+
 async function newDevice(t) {
   const context = await (await getBrowser()).newContext({ serviceWorkers: 'block' });
   t.after(() => context.close());
@@ -120,7 +139,7 @@ async function newDevice(t) {
         'Content-Security-Policy': "default-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'",
         'Referrer-Policy': 'no-referrer',
       },
-      body: await readFile(new URL(file[0], root)),
+      body: path === '/' ? await demoHtml(true) : await readFile(new URL(file[0], root)),
     });
   });
   const page = await context.newPage();
@@ -128,41 +147,94 @@ async function newDevice(t) {
   return { page, goOffline: () => { offline = true; } };
 }
 
-async function newDomClient(t) {
-  const html = await readFile(new URL('demo/index.html', root), 'utf8');
-  const { window } = new JSDOM(html, { url: origin });
+async function waitFor(condition, description) {
+  for (let attempt = 0; attempt < 100; attempt++) {
+    if (condition()) return;
+    await delay(25);
+  }
+  assert.fail(description);
+}
+
+async function newDomClient(t, { enabled = false, beforeRequest } = {}) {
+  const { window } = new JSDOM(await demoHtml(enabled), { url: origin });
   t.after(() => window.close());
+  const { document } = window;
+  const requestPaths = [];
   let offline = false;
-  window.fetch = (path, { method, headers, body }) => {
-    if (offline) return Promise.reject(new Error('Offline'));
+  window.fetch = async (path, options) => {
+    requestPaths.push(path);
+    if (offline) throw new Error('Offline');
+    await beforeRequest?.(path, options);
+    const { method, headers, body } = options;
     return mf.dispatchFetch(origin + path, { method, headers: { ...headers, Origin: origin }, body });
   };
   activateDemo(window);
-  const document = window.document;
   return {
+    document,
+    requestPaths,
     complete(id) { document.querySelector('input[value="' + id + '"]').click(); },
     action(name, code = '') {
       document.querySelector('#recover-code').value = code;
       document.querySelector('button[data-action="' + name + '"]').click();
     },
-    async waitForStatus(prefix) {
+    waitForStatus(prefix) {
       const status = document.querySelector('#status');
-      for (let attempt = 0; attempt < 100; attempt++) {
-        if (status.textContent.startsWith(prefix)) return;
-        await delay(25);
-      }
-      assert.fail('Expected status: ' + prefix);
+      return waitFor(() => status.textContent.startsWith(prefix), 'Expected status ' + prefix);
     },
-    issuedCode: () => document.querySelector('#new-code').value,
+    waitForIdle() {
+      return waitFor(() => !document.querySelector('[data-action="save"]').disabled, 'Expected request to finish');
+    },
+    issuedCode: () => document.querySelector('#new-code').textContent,
     completed: () => JSON.parse(window.localStorage.getItem(localKey)),
     storedKeys: () => Object.keys(window.localStorage),
+    pageHide: () => window.dispatchEvent(new window.PageTransitionEvent('pagehide', { persisted: true })),
     goOffline: () => { offline = true; },
   };
 }
 
-test('two independent synthetic clients save explicitly and merge across Workerd D1', async t => {
-  const first = await newDomClient(t);
-  const second = await newDomClient(t);
+test('backup is off by default and local completion needs neither the network nor a binding', async t => {
+  const device = await newDomClient(t);
+  device.complete('sample-fox');
+  assert.deepEqual(device.completed(), ['sample-fox']);
+  assert.equal(device.document.querySelector('#backup-controls').hidden, true);
+  for (const action of ['save', 'restore', 'revoke']) device.action(action);
+  assert.deepEqual(device.requestPaths, []);
+
+  for (const flag of [undefined, 'false', true]) {
+    const env = {
+      PROGRESS_BACKUP_ENABLED: flag,
+      get PROGRESS_DB() { assert.fail('The disabled Worker must not access D1'); },
+    };
+    await assertUnavailable(await worker.fetch(new Request(origin + api + 'save'), env));
+    await worker.scheduled(undefined, env);
+  }
+});
+
+test('an enabled worker fails closed without the dedicated D1 binding and its session API', async () => {
+  for (const bindings of [{ DB: db }, { PROGRESS_DB: { prepare: db.prepare } }]) {
+    const env = { ...enabledBindings, ...bindings };
+    const response = await worker.fetch(workerRequest('save', saveBody), env);
+    assert.equal(response.status, 503);
+    assert.deepEqual(await response.json(), { error: 'Backup service unavailable.' });
+    assert.match(response.headers.get('Cache-Control'), /no-store/);
+    await assert.rejects(worker.scheduled(undefined, env), /Progress backup cleanup unavailable/);
+  }
+  assert.equal(await countBackups(), 0);
+});
+
+test('two independent synthetic clients save explicitly and merge current completion across Workerd D1', { timeout: 10000 }, async t => {
+  const first = await newDomClient(t, { enabled: true });
+  const restoreStarted = Promise.withResolvers();
+  const continueRestore = Promise.withResolvers();
+  t.after(() => continueRestore.resolve());
+  const second = await newDomClient(t, {
+    enabled: true,
+    beforeRequest(path) {
+      if (path !== api + 'restore') return;
+      restoreStarted.resolve();
+      return continueRestore.promise;
+    },
+  });
   first.complete('sample-fox');
   second.complete('sample-owl');
   assert.equal(await countBackups(), 0);
@@ -173,16 +245,24 @@ test('two independent synthetic clients save explicitly and merge across Workerd
   const code = first.issuedCode();
   assert.equal(code.length, 43);
   second.action('restore', code);
+  await restoreStarted.promise;
+  second.complete('sample-cupcake');
+  const storage = second.document.defaultView.localStorage;
+  const inFlightDrawing = JSON.stringify({ step: 2, drawingMode: 'trace', strokes: [{ tool: 'pencil' }] });
+  storage.setItem(unrelatedDrawingKey, inFlightDrawing);
+  continueRestore.resolve();
   await second.waitForStatus('Progress restored');
   assert.deepEqual(first.completed(), ['sample-fox']);
-  assert.deepEqual(second.completed(), ['sample-fox', 'sample-owl']);
-  assert.deepEqual(second.storedKeys(), [localKey]);
+  assert.deepEqual(second.completed(), ['sample-cupcake', 'sample-fox', 'sample-owl']);
+  assert.deepEqual(second.storedKeys(), [localKey, unrelatedDrawingKey]);
+  assert.equal(storage.getItem(unrelatedDrawingKey), inFlightDrawing);
+  assert.equal(second.document.querySelector('#recover-code').value, '');
 
   second.action('revoke', code);
   await second.waitForStatus('Backup deleted.');
   second.action('restore', code);
   await second.waitForStatus('Backup unavailable.');
-  assert.deepEqual(second.completed(), ['sample-fox', 'sample-owl']);
+  assert.deepEqual(second.completed(), ['sample-cupcake', 'sample-fox', 'sample-owl']);
   assert.equal(await countBackups(), 0);
 
   first.goOffline();
@@ -191,6 +271,78 @@ test('two independent synthetic clients save explicitly and merge across Workerd
   await first.waitForStatus('Could not complete');
   assert.deepEqual(first.completed(), ['sample-fox', 'sample-cupcake']);
   assert.equal(await countBackups(), 0);
+});
+
+test('separate saves issue separate codes and the demo clears them on dismiss and page exit', async t => {
+  let lastRequest;
+  const device = await newDomClient(t, {
+    enabled: true,
+    beforeRequest(path, options) { lastRequest = { path, options }; },
+  });
+  device.complete('sample-fox');
+  device.action('save');
+  await device.waitForStatus('Backup saved.');
+  const firstCode = device.issuedCode();
+  assert.equal(firstCode.length, 43);
+  device.document.querySelector('#dismiss-code').click();
+  assert.equal(device.issuedCode(), '');
+  assert.equal(device.document.querySelector('#new-backup').hidden, true);
+
+  device.action('save');
+  await device.waitForStatus('Backup saved.');
+  const secondCode = device.issuedCode();
+  assert.equal(secondCode.length, 43);
+  assert.ok(secondCode !== firstCode);
+  assert.equal(await countBackups(), 2);
+  assert.deepEqual(lastRequest && JSON.parse(lastRequest.options.body), saveBody);
+
+  device.action('revoke', secondCode);
+  await device.waitForStatus('Backup deleted.');
+  assert.equal(device.issuedCode(), '');
+  assert.ok(lastRequest.path === api + 'revoke');
+  assert.ok(JSON.parse(lastRequest.options.body).code === secondCode);
+  assert.equal(lastRequest.options.redirect, 'error');
+  assert.equal(lastRequest.options.cache, 'no-store');
+  assert.equal(lastRequest.options.credentials, 'omit');
+  assert.equal(lastRequest.options.referrerPolicy, 'no-referrer');
+  assert.ok(device.document.URL === origin + '/');
+  await assertUnavailable(await request('restore', { code: secondCode }));
+  assert.equal((await request('restore', { code: firstCode })).status, 200);
+
+  device.action('save');
+  await device.waitForStatus('Backup saved.');
+  assert.equal(device.issuedCode().length, 43);
+  const entered = device.document.querySelector('#recover-code');
+  entered.value = firstCode;
+  device.pageHide();
+  assert.equal(device.issuedCode(), '');
+  assert.equal(entered.value, '');
+  assert.deepEqual(device.storedKeys(), [localKey]);
+  assert.deepEqual(device.completed(), ['sample-fox']);
+});
+
+test('a save response received after navigation never redisplays the code', { timeout: 10000 }, async t => {
+  const saveStarted = Promise.withResolvers();
+  const continueSave = Promise.withResolvers();
+  t.after(() => continueSave.resolve());
+  const device = await newDomClient(t, {
+    enabled: true,
+    beforeRequest(_path, options) {
+      saveStarted.resolve(options.signal);
+      return continueSave.promise;
+    },
+  });
+  device.complete('sample-fox');
+  device.action('save');
+  const signal = await saveStarted.promise;
+  device.pageHide();
+  assert.ok(signal.aborted);
+  continueSave.resolve();
+  await device.waitForIdle();
+  assert.equal(await countBackups(), 1);
+  assert.equal(device.issuedCode(), '');
+  assert.equal(device.document.querySelector('#new-backup').hidden, true);
+  assert.deepEqual(device.completed(), ['sample-fox']);
 });
 
 test('two isolated browsers save explicitly, merge completion and keep local progress after revocation', browserRequired, async t => {
@@ -204,7 +356,7 @@ test('two isolated browsers save explicitly, merge completion and keep local pro
 
   await first.getByRole('button', { name: 'Save a backup' }).click();
   await first.getByText('Backup saved.', { exact: false }).waitFor();
-  const code = await first.locator('#new-code').inputValue();
+  const code = await first.locator('#new-code').textContent();
   assert.equal(code.length, 43);
   assert.equal(await countBackups(), 1);
 
@@ -229,7 +381,7 @@ test('two isolated browsers save explicitly, merge completion and keep local pro
   await second.getByText('Could not complete the backup request.').waitFor();
   await second.reload();
   await first.reload();
-  assert.equal(await first.locator('#new-code').inputValue(), '');
+  assert.equal(await first.locator('#new-code').textContent(), '');
   assert.deepEqual(JSON.parse(await first.evaluate(key => localStorage.getItem(key), localKey)), ['sample-fox']);
   const secondStored = JSON.parse(await second.evaluate(key => localStorage.getItem(key), localKey));
   assert.deepEqual(new Set(secondStored), new Set(['sample-fox', 'sample-cupcake', 'sample-owl']));
@@ -258,7 +410,7 @@ test('only versioned allowlisted IDs and an expiring capability digest are store
   for (const invalid of [
     { ...saveBody, name: 'synthetic extra field' },
     { ...saveBody, version: 2 },
-    { version: 1, completed: ['little-fox'] },
+    { version: 1, completed: ['sample-unlisted'] },
     { version: 1, completed: [] },
     { version: 1, completed: Array(4).fill('sample-fox') },
   ]) {
@@ -284,6 +436,71 @@ test('malformed, unknown, expired and revoked capabilities fail closed', async (
   assert.equal(await countBackups(), 1);
   await saveCode();
   assert.equal(await countBackups(), 1);
+});
+
+test('revocation confirms row deletion before a fresh restore on a separate request', async () => {
+  const { code } = await saveCode();
+  const digest = createHash('sha256').update(code).digest('hex');
+  const deleted = await request('revoke', { code });
+  assert.equal(deleted.status, 204);
+  assert.match(deleted.headers.get('Cache-Control'), /no-store/);
+  const [restore, row] = await Promise.all([
+    request('restore', { code }),
+    db.withSession('first-primary').prepare('SELECT 1 FROM progress_backups WHERE code_digest = ?')
+      .bind(digest).first(),
+  ]);
+  await assertUnavailable(restore);
+  assert.equal(row, null);
+});
+
+test('a failed deletion confirmation returns a generic failure after using the same primary session', async () => {
+  const { code } = await saveCode();
+  const sessionTrace = [];
+  const response = await worker.fetch(workerRequest('revoke', { code }), {
+    ...enabledBindings,
+    PROGRESS_DB: {
+      prepare(sql) { return db.prepare(sql); },
+      withSession(constraint) {
+        const session = db.withSession(constraint);
+        sessionTrace.push(constraint);
+        return {
+          prepare(sql) {
+            const operation = sql.trimStart().split(' ', 1)[0];
+            sessionTrace.push(operation);
+            if (operation === 'SELECT') throw new Error('Synthetic D1 verification failure.');
+            return session.prepare(sql);
+          },
+        };
+      },
+    },
+  });
+  assert.deepEqual(sessionTrace, ['first-primary', 'DELETE', 'SELECT']);
+  assert.equal(response.status, 503);
+  assert.deepEqual(await response.json(), { error: 'Backup service unavailable.' });
+  assert.equal(await countBackups(), 0);
+  await assertUnavailable(await request('restore', { code }));
+});
+
+test('the local scheduled handler sweeps only expired rows, at most 100 per invocation', async () => {
+  const { code: active } = await saveCode();
+  const { code: expired } = await saveCode();
+  const expiredDigest = createHash('sha256').update(expired).digest('hex');
+  await db.prepare('UPDATE progress_backups SET expires_at = unixepoch() - 3600 WHERE code_digest = ?')
+    .bind(expiredDigest).run();
+  await db.prepare(`
+    WITH RECURSIVE number(n) AS (VALUES (1) UNION ALL SELECT n + 1 FROM number WHERE n < 104)
+    INSERT INTO progress_backups
+    SELECT printf('%064x', n), 1, '["sample-owl"]', unixepoch() - 120 FROM number
+  `).run();
+  await assertUnavailable(await request('restore', { code: expired }));
+  assert.equal(await countBackups(), 106);
+
+  const sweep = () => mf.dispatchFetch(origin + '/cdn-cgi/handler/scheduled');
+  assert.equal((await sweep()).status, 200);
+  assert.equal(await countBackups(), 6);
+  assert.equal((await sweep()).status, 200);
+  assert.equal(await countBackups(), 1);
+  assert.equal((await request('restore', { code: active })).status, 200);
 });
 
 test('only same-origin JSON posts to exact paths can reach backup operations', async () => {

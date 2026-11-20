@@ -4,10 +4,6 @@ export function activateDemo(environment) {
   const { document, localStorage } = environment;
   const key = 'little-pencil-club/progress-backup-prototype';
   const checkboxes = Array.from(document.querySelectorAll('#lessons input'));
-  const buttons = Array.from(document.querySelectorAll('button[data-action]'));
-  const recoverCode = document.querySelector('#recover-code');
-  const newCode = document.querySelector('#new-code');
-  const newBackup = document.querySelector('#new-backup');
   const status = document.querySelector('#status');
 
   function localCompleted() {
@@ -33,15 +29,47 @@ export function activateDemo(environment) {
     });
   }
 
+  showLocal();
+  if (document.documentElement.dataset.progressBackup !== 'enabled') return;
+
+  const controls = document.querySelector('#backup-controls');
+  const buttons = Array.from(controls.querySelectorAll('button[data-action]'));
+  const recoverCode = document.querySelector('#recover-code');
+  const newCode = document.querySelector('#new-code');
+  const newBackup = document.querySelector('#new-backup');
+  const expiry = document.querySelector('#expiry');
+  let activeRequest;
+
+  function clearDisplayedCode() {
+    newCode.textContent = '';
+    expiry.textContent = '';
+    newBackup.hidden = true;
+  }
+
+  document.querySelector('#dismiss-code').addEventListener('click', () => {
+    clearDisplayedCode();
+    controls.querySelector('[data-action="save"]').focus();
+  });
+  environment.addEventListener('pagehide', () => {
+    activeRequest?.abort();
+    recoverCode.value = '';
+    clearDisplayedCode();
+    status.textContent = '';
+  });
+
   for (const button of buttons) {
     button.addEventListener('click', async () => {
       const { action } = button.dataset;
+      const controller = new AbortController();
+      activeRequest = controller;
       for (const control of buttons) control.disabled = true;
       status.textContent = '';
+
       try {
         const body = action === 'save'
           ? { version: SCHEMA_VERSION, completed: localCompleted() }
           : { code: recoverCode.value.trim() };
+        recoverCode.value = '';
         const response = await environment.fetch('/progress-backup/v1/' + action, {
           method: 'POST',
           cache: 'no-store',
@@ -50,30 +78,30 @@ export function activateDemo(environment) {
           referrerPolicy: 'no-referrer',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
+          signal: controller.signal,
         });
+        if (controller.signal.aborted) return;
         if (response.status === 204) {
-          if (newCode.value === body.code) {
-            newCode.value = '';
-            newBackup.hidden = true;
-          }
+          if (newCode.textContent === body.code) clearDisplayedCode();
           status.textContent = 'Backup deleted.';
           return;
         }
+
         const result = await response.json();
+        if (controller.signal.aborted) return;
         if (!response.ok) {
           status.textContent = result.error;
           return;
         }
         if (action === 'save') {
-          newCode.value = result.code;
-          document.querySelector('#expiry').textContent =
-            'Expires ' + new Date(result.expiresAt).toLocaleDateString() + '.';
+          newCode.textContent = result.code;
+          expiry.textContent = 'Expires ' + new Date(result.expiresAt).toLocaleDateString() + '.';
           newBackup.hidden = false;
-          status.textContent = 'Backup saved. Keep your recovery code somewhere private.';
+          status.textContent = 'Backup saved.';
         } else if (action === 'restore' && result.version === SCHEMA_VERSION) {
           const backup = normalizeCompleted(result.completed);
           if (!backup?.length) throw new Error('Unexpected backup response');
-          // Local progress may have changed while the network request was in flight.
+          // Re-read completion when the response arrives to include any progress made in the meantime.
           localStorage.setItem(key, JSON.stringify(mergeCompleted(localCompleted(), backup)));
           showLocal();
           status.textContent = 'Progress restored on this device.';
@@ -81,15 +109,15 @@ export function activateDemo(environment) {
           throw new Error('Unexpected backup response');
         }
       } catch {
-        status.textContent = 'Could not complete the backup request.';
+        if (!controller.signal.aborted) status.textContent = 'Could not complete the backup request.';
       } finally {
+        activeRequest = undefined;
         recoverCode.value = '';
         for (const control of buttons) control.disabled = false;
       }
     });
   }
-
-  showLocal();
+  controls.hidden = false;
 }
 
 if (typeof window !== 'undefined') activateDemo(window);

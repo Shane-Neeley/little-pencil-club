@@ -26,6 +26,14 @@ function unavailable() {
   return reply(404, { error: 'Backup unavailable.' });
 }
 
+function progressDatabase(env) {
+  const db = env.PROGRESS_DB;
+  if (typeof db?.prepare !== 'function' || typeof db?.withSession !== 'function') {
+    throw new Error('Progress storage unavailable.');
+  }
+  return db;
+}
+
 async function readBody(request) {
   const declaredLength = request.headers.get('Content-Length');
   if (declaredLength !== null && Number(declaredLength) > MAX_BODY_BYTES) return null;
@@ -78,7 +86,7 @@ async function takeRequestSlot(db, action) {
   return row !== null;
 }
 
-export async function purgeExpired(db) {
+async function purgeExpired(db) {
   return db.prepare(`
     DELETE FROM progress_backups WHERE code_digest IN (
       SELECT code_digest FROM progress_backups
@@ -113,15 +121,23 @@ async function restoreOrRevoke(db, action, body) {
   }
 
   const digest = await digestCode(body.code);
+  // Each restore starts with fresh data even when it arrives from a different device.
+  const session = db.withSession('first-primary');
   if (action === 'revoke') {
-    const removed = await db.prepare(`
+    const removed = await session.prepare(`
       DELETE FROM progress_backups WHERE code_digest = ? AND expires_at > unixepoch()
       RETURNING schema_version
     `).bind(digest).first();
-    return removed ? reply(204, null) : unavailable();
+    if (!removed) return unavailable();
+
+    // The same session sees the committed DELETE before we acknowledge it.
+    const remaining = await session.prepare('SELECT 1 FROM progress_backups WHERE code_digest = ?')
+      .bind(digest).first();
+    if (remaining) throw new Error('Progress backup deletion could not be verified.');
+    return reply(204, null);
   }
 
-  const row = await db.prepare(`
+  const row = await session.prepare(`
     SELECT schema_version, completed_lessons FROM progress_backups
     WHERE code_digest = ? AND expires_at > unixepoch()
   `).bind(digest).first();
@@ -133,6 +149,8 @@ async function restoreOrRevoke(db, action, body) {
 
 export default {
   async fetch(request, env) {
+    if (env?.PROGRESS_BACKUP_ENABLED !== 'true') return unavailable();
+
     const url = new URL(request.url);
     const action = url.pathname.startsWith(basePath) ? url.pathname.slice(basePath.length) : '';
     if (!limits.has(action) || request.url.includes('?')) return unavailable();
@@ -145,7 +163,7 @@ export default {
     }
 
     try {
-      const db = env.PROGRESS_DB;
+      const db = progressDatabase(env);
       if (!(await takeRequestSlot(db, action))) {
         return reply(429, { error: 'Wait a minute and try again.' }, { 'Retry-After': String(WINDOW_SECONDS) });
       }
@@ -158,6 +176,11 @@ export default {
   },
 
   async scheduled(_controller, env) {
-    await purgeExpired(env.PROGRESS_DB);
+    if (env?.PROGRESS_BACKUP_ENABLED !== 'true') return;
+    try {
+      await purgeExpired(progressDatabase(env));
+    } catch {
+      throw new Error('Progress backup cleanup unavailable.');
+    }
   },
 };

@@ -6,23 +6,27 @@
   <script type="module" src="/demo/demo.mjs"></script>
   <main>
     <h1>Progress backup test</h1>
-    <p>Use the sample lessons to test saving and restoring progress across browser sessions.</p>
     <fieldset id="lessons">
       <legend>Completed on this device</legend>
       <label><input type="checkbox" value="sample-fox"> Sample fox</label>
       <label><input type="checkbox" value="sample-cupcake"> Sample cupcake</label>
       <label><input type="checkbox" value="sample-owl"> Sample owl</label>
     </fieldset>
-    <p><button type="button" data-action="save">Save a backup</button></p>
-    <p id="new-backup" hidden>
-      <label>New recovery code <input id="new-code" type="text" readonly autocomplete="off"></label>
-      <span id="expiry"></span>
-    </p>
-    <p><label>Recovery code <input id="recover-code" type="password" maxlength="64" autocomplete="off" spellcheck="false" autocapitalize="off"></label></p>
-    <p>
-      <button type="button" data-action="restore">Bring back my progress</button>
-      <button type="button" data-action="revoke">Delete backup</button>
-    </p>
+    <section id="backup-controls" aria-label="Progress backup" hidden>
+      <p>Each save makes a separate backup with its own recovery code. Keep each code somewhere private.</p>
+      <p><button type="button" data-action="save">Save a backup</button></p>
+      <p id="new-backup" hidden>
+        New recovery code <code id="new-code"></code>
+        <span id="expiry"></span>
+        <button id="dismiss-code" type="button">Dismiss recovery code</button>
+      </p>
+      <p><label>Recovery code <input id="recover-code" type="password" maxlength="64" autocomplete="off" spellcheck="false" autocapitalize="off"></label></p>
+      <p>
+        <button type="button" data-action="restore">Bring back my progress</button>
+        <button type="button" data-action="revoke">Delete backup</button>
+      </p>
+      <p>Deleting a backup prevents future restores with its code. Progress already restored stays on your device.</p>
+    </section>
     <p id="status" role="status"></p>
   </main>
 </html>
