@@ -357,4 +357,42 @@ const lessons = [
       ['Try light and dark', 'On scrap paper, press softly for one line, then harder for the next.', '', ''],
     ],
   },
+  {
+    id: 'pebble-overlap', title: 'Behind and in front', category: 'Skills', minutes: 2, level: 1, skill: 'Overlapping shapes',
+    transfer: {
+      title: 'Draw overlapping balloons',
+      prompt: 'Sketch two balloons with one partly hidden.',
+    },
+    demoLabels: [
+      'One rounded pebble drawn as a closed loop.',
+      'Two pebbles. The back pebble’s line stops at the edge of the front pebble.',
+    ],
+    steps: [
+      ['Draw a pebble', 'Draw one rounded pebble loop.', '', '', 'M52 118 Q56 87 82 83 Q115 76 143 92 Q166 105 159 133 Q149 155 114 157 Q82 158 62 145 Q46 135 52 118Z'],
+      ['Draw a pebble behind it', 'Add the part of a second pebble you can see.', '', '', 'M113 83 C124 64 151 62 174 71 C197 80 205 96 199 114 C194 127 175 139 156 140'],
+    ],
+  },
+  {
+    id: 'leaf-observation', title: 'Look, draw, look again', category: 'Skills', minutes: 2, level: 2, skill: 'Observing edges and details',
+    reference: {
+      src: './references/leaf-widest.png',
+      label: 'Leaf reference',
+      alt: 'Leaf seen from above. Dark brackets mark the widest part on the left and right.',
+    },
+    drawingStart: 1,
+    transfer: {
+      title: 'Sketch a nearby object',
+      prompt: 'Keep the object in view while you sketch it.',
+    },
+    demoLabels: [
+      'Two brackets mark the leaf’s widest span.',
+      'One continuous line around the outside of the pointed leaf.',
+      'A single curved vein inside the leaf outline.',
+    ],
+    steps: [
+      ['Find the widest spot', 'Point to the widest part of the leaf.', '', '', 'M54 96 H47 V122 H54 M186 96 H193 V122 H186'],
+      ['Draw the outside edge', 'Look back at the leaf before drawing its outside edge.', '', '', 'M120 29 C110 48 73 67 62 95 C44 135 72 157 118 175 C145 160 181 143 182 111 C184 77 144 45 120 29Z'],
+      ['Add one detail', 'Draw one vein you can see.', '', '', 'M118 175 Q108 139 114 114 Q119 89 120 53'],
+    ],
+  },
 ];

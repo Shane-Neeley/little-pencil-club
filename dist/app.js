@@ -148,7 +148,9 @@ function render() {
     page = dataFor(lesson).completed ? 'done' : 'draw';
     history.replaceState(null, '', `#${page}/${id}`);
   }
-  const challenge = page === 'challenge' && id === 'pencil-basics' && Boolean(dataFor(lesson).completed);
+  const challenge = page === 'challenge'
+    && (id === 'pencil-basics' || Boolean(lesson?.transfer))
+    && Boolean(dataFor(lesson).completed);
   const studio = lesson && (page === 'draw' || page === 'done' || challenge);
   const book = page === 'sketchbook';
   document.querySelector('#nav-lessons').toggleAttribute('aria-current', !book);
@@ -307,8 +309,9 @@ function toolButton(name, label, action, text = '', pressed = '') {
 
 function renderStudio(lesson, finished, challenge) {
   const data = dataFor(lesson);
+  const reference = challenge ? undefined : lesson.reference;
   session = { lesson, data, finished, challenge, tool: 'pencil', redo: [], remix: 0 };
-  main.className = 'wrap studio';
+  main.className = `wrap studio${lesson.transfer ? ' observation-lesson' : ''}`;
   main.innerHTML = `
     <div class="lesson-heading">
       <h1>${lesson.title}</h1>
@@ -332,10 +335,16 @@ function renderStudio(lesson, finished, challenge) {
           </div>
           ${toolButton('save', 'Save drawing as PNG', 'save', 'Save')}
         </div>
+        ${reference ? `<div class="drawing-views">
+          <figure class="lesson-reference" ${finished ? 'hidden' : ''}>
+            <img src="${reference.src}" alt="${reference.alt}" width="560" height="380">
+            <figcaption>${reference.label}</figcaption>
+          </figure>` : ''}
         <div class="surface">
           <canvas id="guide" role="img" aria-hidden="true"></canvas>
           <canvas id="ink" aria-label="Drawing area. Draw with an Apple Pencil, finger, or mouse."></canvas>
         </div>
+        ${reference ? '</div>' : ''}
         <div class="paper-actions" role="group" aria-label="Paper lesson controls" hidden>
           <span class="sr-only" role="status"></span>
           <button class="secondary" type="button" data-action="back">${icon('back')} Back</button>
@@ -404,16 +413,18 @@ function renderStudio(lesson, finished, challenge) {
 function renderPanel() {
   const { lesson, data, finished, challenge } = session;
   const panel = main.querySelector('.lesson-panel');
+  const reference = main.querySelector('.lesson-reference');
+  if (reference) reference.hidden = finished;
   const previousCanvas = panel.querySelector('canvas');
   if (previousCanvas) observer.unobserve(previousCanvas);
   panel.classList.toggle('finish-sheet', finished);
   if (challenge) {
     panel.innerHTML = `
-      ${difficultyLabel(3)}
+      ${lesson.transfer ? '' : difficultyLabel(3)}
       <div class="transfer-paper" aria-hidden="true">${icon('paper')}${icon('pencil')}</div>
-      <h2 class="step-heading" tabindex="-1">Invent a moon kite</h2>
-      <p class="step-text">Draw a kite on paper. Use light marks on one side and dark marks on the other.</p>
-      <details class="hint"><summary>Show and tell</summary><p>Point to your darkest mark. What did you do to make it darker?</p></details>
+      <h2 class="step-heading" tabindex="-1">${lesson.transfer?.title ?? 'Invent a moon kite'}</h2>
+      <p class="step-text">${lesson.transfer?.prompt ?? 'Draw a kite on paper. Use light marks on one side and dark marks on the other.'}</p>
+      ${lesson.transfer ? '' : '<details class="hint"><summary>Show and tell</summary><p>Point to your darkest mark. What did you do to make it darker?</p></details>'}
       <div class="transfer-actions">
         <button type="button" class="secondary" data-action="back">${icon('back')} Back</button>
         <button type="button" class="primary" data-action="next">Done ${icon('check')}</button>
@@ -423,15 +434,15 @@ function renderPanel() {
   }
   if (finished) {
     const following = lessons[lessons.indexOf(lesson) + 1];
-    const next = following && following.id !== 'pencil-basics' ? following : lessons[0];
+    const next = following && following.category !== 'Skills' ? following : lessons[0];
     panel.innerHTML = `
       <div class="finish-icon">${icon('sparkle')}</div>
       <h2 class="finish-title" tabindex="-1">You drew it!</h2>
       <p id="finish-message"></p>
-      ${lesson.id === 'pencil-basics' ? `
+      ${lesson.id === 'pencil-basics' || lesson.transfer ? `
         <div class="challenge-invite">
-          <button class="secondary" type="button" data-action="challenge">${icon('sparkle')} Try Hard</button>
-          <p>Use light and dark on a new drawing, with no example.</p>
+          <button class="secondary" type="button" data-action="challenge">${icon('sparkle')} ${lesson.transfer ? 'Try on your own' : 'Try Hard'}</button>
+          <p>${lesson.transfer ? lesson.transfer.title : 'Use light and dark on a new drawing, with no example.'}</p>
         </div>` : ''}
       ${coachLessonIdeas[lesson.id] ? `<div class="coach-box">
         <strong>Give it a twist</strong>
@@ -448,6 +459,7 @@ function renderPanel() {
   const activity = practiceActivities[activityFor(lesson, data)];
   const [stepTitle, stepInstruction, guidance, hint] = lesson.steps[data.step];
   const { title = stepTitle, instruction = stepInstruction } = activity ?? {};
+  const tip = guidance || hint ? `<details class="hint"><summary>Pencil tip</summary><p>${guidance}</p><p>${hint}</p></details>` : '';
   panel.innerHTML = `
     <div class="step-progress">
       ${activity ? difficultyLabel(activity.level) : `
@@ -462,7 +474,7 @@ function renderPanel() {
     </button>
     <h2 class="step-heading" tabindex="-1">${title}</h2>
     <p class="step-text">${instruction}</p>
-    ${activity ? renderPracticeOptions(data) : `<details class="hint"><summary>Pencil tip</summary><p>${guidance}</p><p>${hint}</p></details>`}
+    ${activity ? renderPracticeOptions(data) : tip}
     <div class="step-actions">
       <button type="button" class="secondary" data-action="back" ${data.step === 0 ? 'disabled' : ''}>${icon('back')} Back</button>
       <button type="button" class="primary" data-action="next">${nextStepLabel()} ${icon('next')}</button>
@@ -487,7 +499,7 @@ function practiceDescription(lesson, data) {
   const activity = activityFor(lesson, data);
   if (activity === 'marks') return 'Two pencil marks. A thin, light line on the left. A thick, dark line on the right.';
   if (activity === 'tail') return `Fox tail with ${foxTailTextures[data.tailTexture].label.toLowerCase()} pattern.`;
-  return '';
+  return lesson.demoLabels?.[data.step] ?? '';
 }
 
 function redrawDemo() {

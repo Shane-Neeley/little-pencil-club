@@ -157,6 +157,7 @@ class FoxLessonTest(unittest.TestCase):
             "Only your lesson progress is saved. Your drawing stays on your paper."
         )
         expect(page.get_by_role("button", name="Try Hard")).to_have_count(0)
+        expect(page.get_by_role("button", name="Try on your own")).to_have_count(0)
         page.goto(f"{self.url}/#challenge/little-fox")
         expect(finished).to_be_visible()
         self.assertTrue(page.url.endswith("#done/little-fox"))
@@ -228,6 +229,110 @@ class FoxLessonTest(unittest.TestCase):
                 expect(page.locator("#drawing-mode")).to_have_value("copy")
                 expect(page.get_by_role("button", name="Save drawing as PNG")).to_be_enabled()
                 self.assertIsNone(page.evaluate("localStorage.getItem('little-pencil-club/pencil-basics')"))
+
+    def open_optional_skill(self, page, name, level):
+        page.get_by_role("button", name="Skills", exact=True).click()
+        topics = page.get_by_role("group", name="Lesson topics")
+        expect(topics.get_by_role("button", name="Skills")).to_have_attribute("aria-pressed", "true")
+        page.get_by_role("link", name=f"{name} 2 min {level}", exact=True).click()
+        expect(page.get_by_role("heading", name=name, exact=True)).to_be_visible()
+        expect(page.locator("#drawing-mode")).to_have_value("paper")
+
+    def test_optional_pebble_overlap_and_independent_balloons(self):
+        page = self.page_at()
+        self.open_optional_skill(page, "Behind and in front", "Easy")
+        expect(page.get_by_role("heading", name="Draw a pebble", exact=True)).to_be_visible()
+        expect(page.get_by_role("img", name="One rounded pebble drawn as a closed loop.")).to_be_visible()
+        self.paper_control(page, "Next").tap()
+        expect(page.get_by_role("heading", name="Draw a pebble behind it")).to_be_visible()
+        expect(page.get_by_role("img", name="The back pebble’s line stops", exact=False)).to_be_visible()
+        page.reload()
+        expect(page.get_by_role("heading", name="Draw a pebble behind it")).to_be_visible()
+        self.paper_control(page, "Finish").tap()
+        page.get_by_role("button", name="Try on your own").tap()
+        expect(page.get_by_role("heading", name="Draw overlapping balloons")).to_be_visible()
+        self.assert_model_hidden(page)
+        page.get_by_role("button", name="Skip", exact=True).tap()
+        expect(page.get_by_role("heading", name="You drew it!")).to_be_visible()
+        self.assertEqual(page.evaluate("""() => {
+            const { step, completed } = JSON.parse(localStorage.getItem('little-pencil-club/pebble-overlap'));
+            return [step, Boolean(completed), localStorage.getItem('little-pencil-club/little-fox')];
+        }"""), [1, True, None])
+
+    def assert_model_hidden(self, page):
+        for selector in ["#guide", "#ink", "#drawing-mode"]:
+            expect(page.locator(selector)).to_be_hidden()
+        expect(page.locator(".lesson-reference")).to_have_count(0)
+        expect(page.get_by_role("button", name="Replay", exact=True)).to_have_count(0)
+
+    def test_leaf_observation_and_independent_transfer(self):
+        page = self.page_at()
+        self.open_optional_skill(page, "Look, draw, look again", "Medium")
+        reference = page.get_by_role("img", name="Dark brackets mark the widest", exact=False)
+        cue = page.get_by_role("img", name="Two brackets mark the leaf’s widest span.")
+        expect(page.get_by_role("heading", name="Find the widest spot")).to_be_visible()
+        expect(reference).to_be_visible()
+        expect(cue).to_be_visible()
+        self.paper_control(page, "Next").tap()
+        expect(page.get_by_text("Look back at the leaf before drawing its outside edge.")).to_be_visible()
+        expect(reference).to_be_visible()
+        expect(page.get_by_role("img", name="One continuous line", exact=False)).to_be_visible()
+        page.locator("#drawing-mode").select_option("copy")
+        expect(reference).to_be_visible()
+        expect(page.locator("#ink")).to_be_visible()
+        page.locator("#drawing-mode").select_option("paper")
+        self.paper_control(page, "Next").tap()
+        expect(page.get_by_role("heading", name="Add one detail")).to_be_visible()
+        expect(reference).to_be_visible()
+        self.paper_control(page, "Back").tap()
+        expect(reference).to_be_visible()
+        self.paper_control(page, "Next").tap()
+        self.paper_control(page, "Finish").tap()
+        expect(reference).to_be_hidden()
+        page.get_by_role("button", name="Try on your own").tap()
+        expect(page.get_by_role("heading", name="Sketch a nearby object")).to_be_visible()
+        expect(page.locator(".step-text")).to_have_text("Keep the object in view while you sketch it.")
+        self.assert_model_hidden(page)
+        page.reload()
+        self.assert_model_hidden(page)
+        page.get_by_role("button", name="Done", exact=True).tap()
+        expect(page.get_by_role("heading", name="You drew it!")).to_be_visible()
+
+    def test_leaf_reference_and_demo_fit(self):
+        for width, height in [(320, 568), (390, 664), (568, 320), (820, 1180), (1180, 820)]:
+            with self.subTest(width=width, height=height):
+                page = self.page_at(width, height)
+                self.open_optional_skill(page, "Look, draw, look again", "Medium")
+                self.paper_control(page, "Next").tap()
+                page.evaluate("window.scrollTo(0, 0)")
+                self.assert_no_overflow(page, width)
+                image = page.locator(".lesson-reference img")
+                guide = page.locator("#guide")
+                expect(image).to_be_in_viewport(ratio=.98)
+                expect(guide).to_be_in_viewport(ratio=.98)
+                reference_box, guide_box = image.bounding_box(), guide.bounding_box()
+                self.assertGreaterEqual(reference_box["height"], 72)
+                self.assertGreaterEqual(guide_box["height"], 72)
+                if width <= 520:
+                    self.assertLessEqual(reference_box["y"] + reference_box["height"], guide_box["y"])
+                else:
+                    self.assertLessEqual(reference_box["x"] + reference_box["width"], guide_box["x"])
+
+    def test_leaf_replay_holds_finished_edge(self):
+        page = self.page_at(1180, 820, touch=False, still=False)
+        self.open_optional_skill(page, "Look, draw, look again", "Medium")
+        self.paper_control(page, "Next").click()
+        reference = page.locator(".lesson-reference img")
+        guide = page.locator("#guide")
+        page.wait_for_function("session.progress === 1")
+        held = guide.evaluate("(canvas) => canvas.toDataURL()")
+        replay = self.paper_control(page, "Replay")
+        replay.press("Enter")
+        page.wait_for_function("session.progress > 0 && session.progress < .5")
+        self.assertNotEqual(held, guide.evaluate("(canvas) => canvas.toDataURL()"))
+        expect(reference).to_be_visible()
+        page.wait_for_function("session.progress === 1")
+        self.assertEqual(held, guide.evaluate("(canvas) => canvas.toDataURL()"))
 
     def test_library_levels_and_legacy_progress(self):
         page = self.page_at(375, 667)

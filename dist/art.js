@@ -315,7 +315,10 @@ const drawExample = (() => {
       if (lesson.id === 'little-fox') pencil(graphics, [{ path: foxFur }]);
     }
 
-    for (let index = 0; index <= currentStep; index += 1) {
+    const drawingStart = lesson.drawingStart ?? 0;
+    // Observation cues belong to their own demo, outside the accumulated sketch.
+    const firstStep = options.teaching && currentStep < drawingStart ? 0 : drawingStart;
+    for (let index = firstStep; index <= currentStep; index += 1) {
       const strokes = stages[index];
       if (options.guide) {
         const isCurrent = index === currentStep;
