@@ -6,3 +6,7 @@
 *.tar.gz
 .venv/
 little-pencil-club-qr-cards.pdf
+
+/node_modules/
+/dist/server/
+/.classroom-preview/

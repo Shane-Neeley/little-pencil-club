@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow, noarchive, noimageindex">
+  <script data-invite-boot>window.classroomInvitation = location.hash.slice(1); history.replaceState(null, '', location.pathname);</script>
+  <title>Classroom Gallery · Little Pencil Club</title>
+  <link rel="icon" href="/logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/classroom/style.css">
+  <script defer src="/classroom/app.js"></script>
+</head>
+<body>
+  <main>
+    <nav aria-label="Little Pencil Club">
+      <a href="/#draw/little-fox"><img src="/logo.svg" width="32" height="32" alt="">Little Pencil Club</a>
+      <a id="gallery-link" href="/classroom" hidden>Gallery</a>
+    </nav>
+    <header>
+      <h1 id="title">Classroom Gallery</h1>
+      <p>Sample drawings only.</p>
+    </header>
+    <p id="status" role="status"></p>
+    <noscript><p>Turn on JavaScript to open the sample gallery.</p></noscript>
+    <p id="qr-help" hidden>Need help? Ask a grown-up to line up the class QR in your camera.</p>
+    <section id="member" hidden>
+      <section aria-labelledby="drawings-heading">
+        <h2 id="drawings-heading">Class drawings</h2>
+        <p id="empty">There are no drawings to show yet.</p>
+        <div id="gallery" class="cards"></div>
+      </section>
+      <form id="submit">
+        <label for="preset">Sample drawing</label>
+        <select id="preset">
+          <option value="sun">Sun and hills</option>
+          <option value="kite">Kite in the breeze</option>
+          <option value="moon">Moon and stars</option>
+          <option value="uncertain">Simulate an uncertain screening result</option>
+        </select>
+        <button type="submit">Share sample</button>
+      </form>
+      <button id="leave" type="button" class="plain">Leave class on this device</button>
+    </section>
+    <section id="review" hidden>
+      <a id="sign-in" href="/signin-with-chatgpt?return_to=%2Fclassroom%2Freview" target="_top" hidden>Sign in to manage a class</a>
+      <div id="controls" hidden>
+        <div class="actions">
+          <button id="new-class" type="button">Create sample class</button>
+          <button id="cleanup" type="button" class="plain">Clear expired samples</button>
+        </div>
+        <div id="classes"></div>
+        <section id="class" hidden aria-labelledby="class-title">
+          <h2 id="class-title"></h2>
+          <div class="actions">
+            <button id="rotate" type="button">Make new sample QR</button>
+            <button id="revoke" type="button" class="plain">Revoke QR and sessions</button>
+          </div>
+          <section id="invite" hidden>
+            <p id="qr-expiry"></p>
+            <canvas id="qr" role="img" aria-label="Private QR for joining this sample class"></canvas>
+            <a id="qr-link" rel="noreferrer">Open sample invite</a>
+          </section>
+          <h3>Manage drawings</h3>
+          <p id="no-review">There are no drawings to manage.</p>
+          <div id="queue" class="cards"></div>
+        </section>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
