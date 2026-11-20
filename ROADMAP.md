@@ -8,7 +8,7 @@ Little Pencil Club is a paper-first drawing game for **ages 5–10**. Build for 
 
 - [x] Paper-first Back, Replay, and Next; optional in-lesson trace and blank canvas.
 - [x] 32 original lessons across six topics, with all three numeric difficulty levels represented.
-- [x] Local Sketchbook, digital PNG export, and post-lesson remix prompts.
+- [x] Local Sketchbook, visible completion checkmarks, digital PNG export, and post-lesson remix prompts.
 - [x] Printable Pencil Pal cards.
 
 ## Unified ranked backlog
@@ -39,7 +39,7 @@ Little Pencil Club is a paper-first drawing game for **ages 5–10**. Build for 
 17. [ ] **[Missing] Offer a “what should I draw next?” suggestion.** Use a locally chosen topic, level, or practiced skill; keep all paths open and switchable. Done when recommendations can be changed or reset with no profile, date of birth, or tracking.
 18. [ ] **[Partial] Make a free-draw Playground.** Surface independent drawing and remix prompts without requiring lesson completion. Done when children can start blank, grab or skip an idea, and keep their own drawing. Keep existing trace and paper modes genuinely optional.
 19. [ ] **[Partial] Set up an original lesson authoring checklist.** Build on the existing lesson data. Done when a new lesson is checked for valid paths/steps, alternate prompts, level, estimated time, reference rights, and a usable transfer exercise; changes to a demo update related modes consistently.
-20. [ ] **[Partial] Make progress and saves resilient.** Keep local Sketchbook and PNG export; consider local restore/export and offline play as a web app. Done when offline restart, partial saves, storage limits, and clearing site data have tested, understandable outcomes.
+20. [ ] **[Partial] Make progress and saves resilient.** Verify completion checkmarks and partial lesson resume after reload and a same-browser reopen, with no account. On school-managed Safari, check whether device policy clears browser data. Explain the difference between saved lesson progress, a physical drawing, and a downloadable digital PNG. Done when verified and storage limits are clear; no cloud dependency.
 
 ### Parallel work, not a pilot dependency
 
@@ -56,7 +56,7 @@ Little Pencil Club is a paper-first drawing game for **ages 5–10**. Build for 
 28. [ ] **[Partial] Explore more original paths and skill range.** Put cartoon expressions, environments, clothing, short comics, perspective, layering and composition behind demand and the learning-pilot results. Done per path when there is clear scaffolding, independent practice, and original art.
 29. [ ] **[Missing] Explore localization.** Make the first lesson and navigation available in a second language, with independently selectable narration if added. Done when language changes do not reset progress and copy/captions have been checked by a fluent reader.
 30. [ ] **[Missing] Explore separate local sketchbooks for siblings.** Keep names optional and do not collect ages. Done when a caregiver can move between and remove local sketchbooks without mixing work. Cloud accounts or cross-device sync are a separate, deferred decision.
-31. [ ] **[Missing / defer] Consider cross-device progress and Journal backup.** Test local export/restore first; require a separate minimization and deletion design before any cloud sync. No child account required for core play.
+31. [ ] **[Missing / defer] Consider cross-device progress and Journal backup.** Offer an optional grown-up settings entry with plain copy (“Save a backup” / “Bring back my progress”), separate from drawing and class access. Start with a local backup/restore of completion IDs only. A later D1 alternative could use a distinct high-entropy, revocable private recovery QR/code without a username, names, email, drawings or a device fingerprint. Keep the code out of URLs sent to services and logs; rate-limit restores and use a minimal retention and deletion policy. Done when cross-device restoration and revocation are tested with synthetic progress and appropriate privacy approval; no child account or requirement to enable it.
 32. [ ] **[Missing / defer] Explore an on-device drawing replay export.** If drawing-process export proves useful, use locally saved strokes and an explicit export action, not camera or wearable capture. No hosted gallery, recipient comments, or automated capture planned.
 
 ### Not needed for this pilot
