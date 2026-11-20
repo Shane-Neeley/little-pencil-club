@@ -106,6 +106,8 @@ const drawExample = (() => {
     ['#c18756', 'M191 49 l0 13 m-6-6 l12 0 M42 98 l0 9 m-4-4 l8 0 M200 77 l0 7 m-4-3.5 l8 0'],
     ['#ab8f6f', 'M36 180 q20-5 36-2 M81 183 q34 3 60-1 M163 180 q19 2 37-1 M182 187 l12 0'],
   ].map(([color, data]) => [color, new Path2D(data)]);
+  // Keep the original library illustration while leaving the practice tail clear.
+  const foxFur = new Path2D('M60 39 L66 48 M66 43 L72 51 M157 47 L165 40 M154 53 L164 46 M184 139 L178 149 M190 138 L182 151 M197 134 L187 152 M148 152 L141 162 M154 152 L147 165');
 
   function measures(data) {
     const path = document.createElementNS(svgNamespace, 'path');
@@ -217,6 +219,67 @@ const drawExample = (() => {
     }
   }
 
+  function skillStroke(graphics, data, color, thickness, progress) {
+    graphics.strokeStyle = color;
+    graphics.lineWidth = thickness;
+    replay(graphics, [data], progress);
+  }
+
+  function artPath(data) {
+    return { data, path: new Path2D(data) };
+  }
+
+  const marks = ['M23 77 Q83 57 151 75', 'M209 77 Q269 57 337 75'].map(artPath);
+  const textures = Object.fromEntries(Object.entries(foxTailTextures).map(([name, { light, dark }]) => [
+    name, [artPath(light), artPath(dark)],
+  ]));
+
+  function drawFoxPractice(graphics, width, height, lesson, { foxActivity, progress, startClue, tailTexture }) {
+    const onTail = foxActivity === 'tail';
+    const frame = onTail ? { x: 108, y: 81, width: 123, height: 106 } : { x: 0, y: 0, width: 360, height: 144 };
+    const scale = Math.min(width / frame.width, height / frame.height);
+    graphics.save();
+    graphics.translate((width - frame.width * scale) / 2, (height - frame.height * scale) / 2);
+    graphics.scale(scale, scale);
+    graphics.translate(-frame.x, -frame.y);
+    graphics.lineCap = 'round';
+    graphics.lineJoin = 'round';
+
+    if (onTail) {
+      const { stages } = prepare(lesson);
+      graphics.strokeStyle = '#9d9089';
+      graphics.globalAlpha = 0.7;
+      graphics.lineWidth = 1.2;
+      for (const index of [2, 3]) {
+        for (const { path } of stages[index]) graphics.stroke(path);
+      }
+      graphics.globalAlpha = 1;
+    } else {
+      graphics.fillStyle = '#2b2a3a';
+      graphics.textAlign = 'center';
+      graphics.font = '700 19px system-ui, sans-serif';
+      graphics.fillText('Light', 87, 111);
+      graphics.fillText('Dark', 273, 111);
+    }
+
+    const [light, dark] = onTail ? textures[tailTexture] : marks;
+    const lightProgress = Math.min(1, progress * 2);
+    const darkProgress = Math.max(0, progress * 2 - 1);
+    skillStroke(graphics, light, '#776e68', onTail ? 2.2 : 5, lightProgress);
+    skillStroke(graphics, dark, '#292630', onTail ? 3.6 : 9, darkProgress);
+
+    if (!onTail && startClue) {
+      graphics.strokeStyle = '#6237aa';
+      graphics.lineWidth = 2.5;
+      for (const x of [23, 209]) {
+        graphics.beginPath();
+        graphics.arc(x, 77, 8, 0, Math.PI * 2);
+        graphics.stroke();
+      }
+    }
+    graphics.restore();
+  }
+
   return function render(canvas, lesson, stepIndex = lesson.steps.length - 1, options = {}) {
     const width = canvas.clientWidth;
     const height = canvas.clientHeight;
@@ -230,6 +293,10 @@ const drawExample = (() => {
     const graphics = canvas.getContext('2d');
     graphics.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
     graphics.clearRect(0, 0, width, height);
+    if (options.foxActivity) {
+      drawFoxPractice(graphics, width, height, lesson, options);
+      return;
+    }
     if (stepIndex < 0) return;
 
     const scale = Math.min(width / artWidth, height / artHeight) * (options.scale ?? 1);
@@ -245,6 +312,7 @@ const drawExample = (() => {
 
     if ((options.decorative || options.hero) && !options.teaching && !options.guide) {
       paint(graphics, { washes: washesForLesson }, options.hero);
+      if (lesson.id === 'little-fox') pencil(graphics, [{ path: foxFur }]);
     }
 
     for (let index = 0; index <= currentStep; index += 1) {

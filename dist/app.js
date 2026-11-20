@@ -17,6 +17,14 @@ const iconPaths = {
   trash: '<path d="M4 7h16M9 7V4h6v3m3 0-1 13H7L6 7m4 4v5m4-5v5"/>',
   play: '<path d="M8 4v16l13-8Z"/>',
   save: '<path d="M12 3v12m-5-5 5 5 5-5m-13 7v4h16v-4"/>',
+  back: '<path d="M20 12H4m7-7-7 7 7 7"/>',
+  next: '<path d="M4 12h16m-7-7 7 7-7 7"/>',
+  skip: '<path d="m4 5 11 7-11 7V5Zm15 0v14"/>',
+  target: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2"/>',
+  paper: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Zm0 0v6h6M8 13h8m-8 4h5"/>',
+  fluffy: '<path d="M5 20q5-4 5-9m1 9q6-5 6-12m-3 13q6-3 7-9"/>',
+  striped: '<path d="m5 6 14 4M4 12l14 4M3 18l14 4"/>',
+  scorched: '<path d="m16 3-7 8 5 1-7 9m1-16-3 3m15 8-3 4"/>',
 };
 
 function icon(name) {
@@ -32,12 +40,21 @@ const drawingModes = [
   ['trace', 'Trace on screen'],
   ['copy', 'Blank canvas'],
 ];
-const difficultyLabels = ['Easy', 'Medium', 'Challenge'];
+const difficulties = [
+  { label: 'Easy', help: 'Watch one big move at a time.' },
+  { label: 'Medium', help: 'Put two moves together and make it your own.' },
+  { label: 'Hard', help: 'Try a drawing with fewer clues.' },
+];
+const foxActivities = {
+  marks: { level: 1, title: 'Try light and dark', instruction: 'On scrap paper, press softly for one line, then harder for the next.' },
+  tail: { level: 2, title: 'Pick a tail pattern', instruction: 'Use light and dark marks on your fox’s tail.' },
+};
 const width = 1000;
 const height = 690;
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const storagePrefix = 'little-pencil-club/';
 let filter = 'All';
+let levelFilter = 0;
 let session;
 let observer;
 let noticeTimeout;
@@ -68,20 +85,30 @@ function dataFor(lesson) {
     // Earlier versions stored Trace by default, even when the learner only advanced steps.
     const legacyMode = saved?.mode === 'copy' || strokes.length ? saved?.mode : 'paper';
     const mode = saved?.drawingMode ?? legacyMode;
-    drawings.set(lesson.id, {
-      step: Math.min(Math.max(0, Number(saved?.step) || 0), lesson.steps.length - 1),
+    const step = Math.min(Math.max(0, Math.trunc(Number(saved?.step)) || 0), lesson.steps.length - 1);
+    const data = {
+      step,
       strokes,
       completed: Number(saved?.completed) || 0,
       drawingMode: drawingModes.some(([id]) => id === mode) ? mode : 'paper',
-    });
+    };
+    if (lesson.id === 'little-fox') {
+      if (step === lesson.steps.length - 1 && Object.hasOwn(foxActivities, saved?.foxActivity)) {
+        data.foxActivity = saved.foxActivity;
+      }
+      data.tailTexture = Object.hasOwn(foxTailTextures, saved?.tailTexture) ? saved.tailTexture : 'fluffy';
+    }
+    drawings.set(lesson.id, data);
   }
   return drawings.get(lesson.id);
 }
 
 function persist() {
-  if (!saveStorage(session.lesson.id, session.data)) {
-    showNotice('This browser could not save your changes. Download your drawing to keep it.');
-  }
+  const saved = saveStorage(session.lesson.id, session.data);
+  if (!saved) showNotice(session.data.drawingMode === 'paper'
+    ? 'This browser could not save your lesson progress.'
+    : 'This browser could not save your changes. Download your drawing to keep it.');
+  return saved;
 }
 
 function showNotice(message) {
@@ -109,14 +136,15 @@ function render() {
 
   const [page, id] = location.hash.slice(1).split('/');
   const lesson = lessonById.get(id);
-  const studio = lesson && (page === 'draw' || page === 'done');
+  const challenge = page === 'challenge' && id === 'little-fox' && Boolean(dataFor(lesson).completed);
+  const studio = lesson && (page === 'draw' || page === 'done' || challenge);
   const book = page === 'sketchbook';
   document.querySelector('#nav-lessons').toggleAttribute('aria-current', !book);
   document.querySelector('#nav-sketchbook').toggleAttribute('aria-current', book);
   (book ? document.querySelector('#nav-sketchbook') : document.querySelector('#nav-lessons')).setAttribute('aria-current', 'page');
 
   if (studio) {
-    renderStudio(lesson, page === 'done' && Boolean(dataFor(lesson).completed));
+    renderStudio(lesson, page === 'done' && Boolean(dataFor(lesson).completed), challenge);
   } else if (book) {
     renderBook();
   } else {
@@ -150,19 +178,29 @@ function categoryStyle(name) {
   return category ? `style="--tint:${category.tint};--accent:${category.accent}"` : '';
 }
 
+function difficultyPencils(level) {
+  return `<span class="difficulty-pencils" aria-hidden="true">${Array.from({ length: 3 }, (_, index) =>
+    `<span class="${index < level ? 'filled' : ''}">${icon('pencil')}</span>`).join('')}</span>`;
+}
+
+function difficultyLabel(level) {
+  return `<span class="difficulty">${difficulties[level - 1].label}${difficultyPencils(level)}</span>`;
+}
+
 function previewCard(lesson, book = false) {
   const data = dataFor(lesson);
-  const detail = book ? (data.completed ? 'Finished drawing' : 'In progress') : `
-    <span>${lesson.minutes} min</span>
-    <span class="difficulty" role="img" aria-label="${difficultyLabels[lesson.level - 1]} difficulty" title="${difficultyLabels[lesson.level - 1]} · ${lesson.skill}">
-      ${Array.from({ length: 3 }, (_, index) => `<span class="${index < lesson.level ? 'filled' : ''}">${icon('pencil')}</span>`).join('')}
-    </span>`;
+  const hasDrawing = data.strokes.some(stroke => stroke.tool === 'pencil');
+  const detail = book
+    ? (data.completed ? (hasDrawing ? 'Finished drawing' : 'Lesson finished') : 'In progress')
+    : `<span>${lesson.minutes} min</span>${difficultyLabel(lesson.level)}`;
   return `<a class="lesson-card" ${categoryStyle(lesson.category)} href="#${book && data.completed ? 'done' : 'draw'}/${lesson.id}">
     <div class="card-picture">
       <canvas class="picture-canvas" data-lesson="${lesson.id}" ${book ? 'data-ink="true"' : ''} aria-hidden="true"></canvas>
-      ${data.completed ? `<span class="completion-mark" title="Lesson finished">${icon('check')}</span>` : ''}
+      ${data.completed ? `<span class="completion-mark" aria-hidden="true" title="Lesson finished">${icon('check')}</span>` : ''}
     </div>
-    <div class="card-body"><span class="card-title">${lesson.title}</span><p class="card-detail">${detail}</p></div>
+    <div class="card-body"><span class="card-title">${lesson.title}</span><p class="card-detail">${detail}</p>
+      ${!book && data.completed ? '<span class="sr-only">Lesson finished</span>' : ''}
+    </div>
   </a>`;
 }
 
@@ -172,8 +210,8 @@ function renderLibrary() {
   main.innerHTML = `
     <section class="hero" aria-labelledby="home-title">
       <div class="hero-copy">
-        <h1 id="home-title">Let’s <em>draw!</em></h1>
-        <p>Grab a pencil and paper.</p>
+        <h1 id="home-title">Grab your <em>paper!</em></h1>
+        <p>Pick up a real pencil. Let’s draw!</p>
         <a class="primary" href="#draw/${fox.id}">${icon('pencil')} ${dataFor(fox).step && !dataFor(fox).completed ? 'Continue little fox' : 'Draw the little fox'}</a>
       </div>
       <div class="hero-art">
@@ -187,16 +225,22 @@ function renderLibrary() {
     </section>
     <section class="library" aria-labelledby="library-title">
       <div class="section-heading"><h2 id="library-title">What will you draw?</h2><span id="lesson-count" class="count" aria-live="polite"></span></div>
-      <div class="filters" aria-label="Filter lessons">
+      <div class="filters" role="group" aria-label="Lesson topics">
         ${['All', ...Object.keys(categories)].map(category => `<button type="button" class="filter" ${categoryStyle(category)} data-filter="${category}" aria-pressed="${category === filter}">${icon(categories[category]?.glyph || 'grid')}${category}</button>`).join('')}
       </div>
+      <div class="filters level-filters" role="group" aria-label="Lesson levels">
+        <button type="button" class="filter" data-level="0" aria-pressed="${levelFilter === 0}">Any level</button>
+        ${difficulties.map(({ label }, index) => `<button type="button" class="filter" data-level="${index + 1}" aria-pressed="${index + 1 === levelFilter}">${label}${difficultyPencils(index + 1)}</button>`).join('')}
+      </div>
+      <p class="level-help" aria-live="polite"></p>
       <div class="card-grid" id="lesson-cards"></div>
     </section>`;
-  main.querySelector('.filters').addEventListener('click', event => {
-    const button = event.target.closest('[data-filter]');
-    if (!button || filter === button.dataset.filter) return;
-    filter = button.dataset.filter;
-    main.querySelectorAll('[data-filter]').forEach(choice => {
+  main.querySelector('.library').addEventListener('click', event => {
+    const button = event.target.closest('[data-filter], [data-level]');
+    if (!button || button.getAttribute('aria-pressed') === 'true') return;
+    if (button.hasAttribute('data-level')) levelFilter = Number(button.dataset.level);
+    else filter = button.dataset.filter;
+    button.parentElement.querySelectorAll('button').forEach(choice => {
       choice.setAttribute('aria-pressed', String(choice === button));
     });
     renderLessonCards();
@@ -210,9 +254,11 @@ function renderLibrary() {
 function renderLessonCards() {
   const cards = document.querySelector('#lesson-cards');
   cards.querySelectorAll('canvas').forEach(canvas => observer.unobserve(canvas));
-  const visible = filter === 'All' ? lessons : lessons.filter(lesson => lesson.category === filter);
+  const visible = lessons.filter(lesson =>
+    (filter === 'All' || lesson.category === filter) && (!levelFilter || lesson.level === levelFilter));
   document.querySelector('#lesson-count').textContent = `${visible.length} lessons`;
-  cards.innerHTML = visible.map(lesson => previewCard(lesson)).join('');
+  main.querySelector('.level-help').textContent = difficulties[levelFilter - 1]?.help ?? '';
+  cards.innerHTML = visible.length ? visible.map(lesson => previewCard(lesson)).join('') : '<p class="no-lessons">Try another topic or level.</p>';
   cards.querySelectorAll('canvas').forEach(canvas => {
     paintCard(canvas);
     observer.observe(canvas);
@@ -229,10 +275,10 @@ function renderBook() {
   const completed = started.filter(lesson => dataFor(lesson).completed).length;
   main.innerHTML = `
     <h1 class="book-heading">Your sketchbook</h1>
-    <p class="book-description">${completed} of ${lessons.length} lessons finished. Your drawings stay in this browser.</p>
+    <p class="book-description">${completed} of ${lessons.length} lessons finished. Your on-screen drawings stay in this browser.</p>
     ${started.length ? `<div class="card-grid">${started.map(lesson => previewCard(lesson, true)).join('')}</div>` : `
       <section class="empty-book">${icon('book')}<h2>A fresh page</h2>
-        <p>Start any lesson. Your drawing will be here when you come back.</p>
+        <p>Start any lesson. Come back here to see what you’ve tried.</p>
         <a class="primary" href="#draw/${lessons[0].id}">Draw the little fox</a>
       </section>`}`;
   watchCards();
@@ -243,9 +289,9 @@ function toolButton(name, label, action, text = '', pressed = '') {
   return `<button type="button" class="tool" data-action="${action}" title="${label}" aria-label="${label}" ${state}>${icon(name)}${text ? `<span class="tool-text ${text === 'Save' ? 'optional' : ''}">${text}</span>` : ''}</button>`;
 }
 
-function renderStudio(lesson, finished) {
+function renderStudio(lesson, finished, challenge) {
   const data = dataFor(lesson);
-  session = { lesson, data, finished, tool: 'pencil', redo: [], duration: 980, remix: 0 };
+  session = { lesson, data, finished, challenge, tool: 'pencil', redo: [], remix: 0 };
   main.className = 'wrap studio';
   main.innerHTML = `
     <div class="lesson-heading">
@@ -271,14 +317,15 @@ function renderStudio(lesson, finished) {
           ${toolButton('save', 'Save drawing as PNG', 'save', 'Save')}
         </div>
         <div class="surface">
-          <canvas id="guide" aria-hidden="true"></canvas>
+          <canvas id="guide" role="img" aria-hidden="true"></canvas>
           <canvas id="ink" aria-label="Drawing area. Draw with an Apple Pencil, finger, or mouse."></canvas>
         </div>
         <div class="paper-actions" role="group" aria-label="Paper lesson controls" hidden>
           <span class="sr-only" role="status"></span>
-          <button class="secondary" type="button" data-action="back">Back</button>
+          <button class="secondary" type="button" data-action="back">${icon('back')} Back</button>
           <button class="board-replay secondary" type="button" data-action="replay">${icon('play')}Replay</button>
-          <button class="primary" type="button" data-action="next">Next</button>
+          <button class="primary" type="button" data-action="next"><span>Next</span>${icon('next')}</button>
+          <button class="quiet" type="button" data-action="skip" hidden>${icon('skip')} Skip</button>
         </div>
         <div class="board-foot">
           <label><input type="checkbox" id="pencil-only" ${pencilOnly ? 'checked' : ''}>Pencil only</label>
@@ -295,9 +342,16 @@ function renderStudio(lesson, finished) {
           <button class="primary" value="clear">Clear drawing</button>
         </div>
       </form>
-    </dialog>`;
+  </dialog>`;
   session.canvas = document.querySelector('#ink');
   session.guide = document.querySelector('#guide');
+  main.classList.toggle('is-transfer', challenge);
+  if (challenge) {
+    main.querySelector('.mode-control').hidden = true;
+    main.querySelector('.board').hidden = true;
+    renderPanel();
+    return;
+  }
   main.querySelector('#drawing-mode').addEventListener('change', event => {
     if (session.stroke) endStroke();
     session.data.drawingMode = event.target.value;
@@ -332,17 +386,36 @@ function renderStudio(lesson, finished) {
 }
 
 function renderPanel() {
-  const { lesson, data, finished } = session;
+  const { lesson, data, finished, challenge } = session;
   const panel = main.querySelector('.lesson-panel');
   const previousCanvas = panel.querySelector('canvas');
   if (previousCanvas) observer.unobserve(previousCanvas);
   panel.classList.toggle('finish-sheet', finished);
+  if (challenge) {
+    panel.innerHTML = `
+      ${difficultyLabel(3)}
+      <div class="transfer-paper" aria-hidden="true">${icon('paper')}${icon('pencil')}</div>
+      <h2 class="step-heading" tabindex="-1">Invent a moon kite</h2>
+      <p class="step-text">Draw a kite on paper. Use light marks on one side and dark marks on the other.</p>
+      <details class="hint"><summary>Show and tell</summary><p>Point to your darkest mark. What did you do to make it darker?</p></details>
+      <div class="transfer-actions">
+        <button type="button" class="secondary" data-action="back">${icon('back')} Back</button>
+        <button type="button" class="primary" data-action="next">Done ${icon('check')}</button>
+        <button type="button" class="quiet" data-action="skip">${icon('skip')} Skip</button>
+      </div>`;
+    return;
+  }
   if (finished) {
     const next = lessons[(lessons.indexOf(lesson) + 1) % lessons.length];
     panel.innerHTML = `
       <div class="finish-icon">${icon('sparkle')}</div>
       <h2 class="finish-title" tabindex="-1">You drew it!</h2>
-      <p>${lesson.title} is in your sketchbook.</p>
+      <p id="finish-message"></p>
+      ${lesson.id === 'little-fox' ? `
+        <div class="challenge-invite">
+          <button class="secondary" type="button" data-action="challenge">${icon('sparkle')} Try Hard</button>
+          <p>Use light and dark on a new drawing, with no example.</p>
+        </div>` : ''}
       <div class="coach-box">
         <strong>Give it a twist</strong>
         <p id="remix" aria-live="polite">${coachLessonIdeas[lesson.id]}</p>
@@ -355,13 +428,16 @@ function renderPanel() {
       </div>`;
     return;
   }
-  const [title, instruction, guidance, hint] = lesson.steps[data.step];
+  const activity = foxActivities[data.foxActivity];
+  const [stepTitle, stepInstruction, guidance, hint] = lesson.steps[data.step];
+  const { title = stepTitle, instruction = stepInstruction } = activity ?? {};
   panel.innerHTML = `
     <div class="step-progress">
+      ${activity ? difficultyLabel(activity.level) : `
       <span class="step-count">Step ${data.step + 1} of ${lesson.steps.length}</span>
       <div class="step-tabs" aria-label="Lesson steps">
         ${lesson.steps.map(([name], index) => `<button type="button" class="${index < data.step ? 'is-past' : ''}" data-action="step-${index}" aria-label="Step ${index + 1}, ${name}" ${index === data.step ? 'aria-current="step"' : ''}>${index + 1}</button>`).join('')}
-      </div>
+      </div>`}
     </div>
     <button class="demo" type="button" data-action="replay" aria-label="Replay stroke" title="Replay stroke" ${data.drawingMode === 'paper' ? 'hidden' : ''}>
       <canvas id="step-example" aria-hidden="true"></canvas>
@@ -369,28 +445,49 @@ function renderPanel() {
     </button>
     <h2 class="step-heading" tabindex="-1">${title}</h2>
     <p class="step-text">${instruction}</p>
-    <details class="hint"><summary>Pencil tip</summary><p>${guidance}</p><p>${hint}</p></details>
+    ${activity ? renderPracticeOptions(data) : `<details class="hint"><summary>Pencil tip</summary><p>${guidance}</p><p>${hint}</p></details>`}
     <div class="step-actions">
-      <button type="button" class="secondary" data-action="back" ${data.step === 0 ? 'disabled' : ''}>Back</button>
-      <button type="button" class="primary" data-action="next">${data.step === lesson.steps.length - 1 ? 'Finish drawing' : 'Next step'}</button>
+      <button type="button" class="secondary" data-action="back" ${data.step === 0 ? 'disabled' : ''}>${icon('back')} Back</button>
+      <button type="button" class="primary" data-action="next">${nextStepLabel()} ${icon('next')}</button>
+      ${activity ? `<button type="button" class="quiet" data-action="skip">${icon('skip')} Skip</button>` : ''}
     </div>`;
   observer.observe(document.querySelector('#step-example'));
 }
 
+function renderPracticeOptions(data) {
+  if (data.foxActivity === 'tail') {
+    return `<div class="practice-options textures" role="group" aria-label="Tail pattern">
+      ${Object.entries(foxTailTextures).map(([name, { label }]) =>
+        `<button class="secondary texture" type="button" data-action="texture-${name}" aria-pressed="${data.tailTexture === name}">${icon(name)}<span>${label}</span></button>`).join('')}
+    </div>`;
+  }
+  return `<div class="practice-options">
+    <button class="secondary" type="button" data-action="start-clue" aria-pressed="${Boolean(session.startClue)}">${icon('target')} Start dots</button>
+  </div>`;
+}
+
+function practiceDescription(data) {
+  if (data.foxActivity === 'marks') return 'Two pencil marks. A thin, light line on the left. A thick, dark line on the right.';
+  if (data.foxActivity === 'tail') return `Fox tail with light and dark marks. ${foxTailTextures[data.tailTexture].label} pattern.`;
+  return '';
+}
+
 function redrawDemo() {
-  if (!session) return;
-  const { data, lesson, finished, guide, progress } = session;
+  if (!session || session.challenge) return;
+  const { data, lesson, finished, guide, progress, startClue } = session;
+  const foxActivity = finished ? undefined : data.foxActivity;
+  const options = { progress, foxActivity, startClue, tailTexture: data.tailTexture };
   if (data.drawingMode === 'paper') {
     const step = finished ? lesson.steps.length - 1 : data.step;
-    drawExample(guide, lesson, step, { teaching: !finished, progress, scale: 1.1 });
+    drawExample(guide, lesson, step, { ...options, teaching: !finished, scale: 1.1 });
     return;
   }
   const canvas = document.querySelector('#step-example');
-  if (canvas) drawExample(canvas, lesson, data.step, { teaching: true, progress });
+  if (canvas) drawExample(canvas, lesson, data.step, { ...options, teaching: true });
 }
 
 function redrawReferences() {
-  if (!session) return;
+  if (!session || session.challenge) return;
   const { lesson, data, finished, guide } = session;
   if (data.drawingMode !== 'paper') {
     drawExample(guide, lesson, data.drawingMode === 'trace' && !finished ? data.step : -1, { guide: true });
@@ -401,15 +498,16 @@ function redrawReferences() {
 function playDemo() {
   cancelAnimationFrame(session.animation);
   session.progress = 1;
-  if (session.finished || reducedMotion.matches) {
+  if (session.finished || session.challenge || reducedMotion.matches) {
     redrawDemo();
     return;
   }
   const active = session;
+  const duration = active.data.foxActivity === 'marks' ? 1700 : active.data.foxActivity === 'tail' ? 1400 : 980;
   const start = performance.now();
   function frame(now) {
     if (session !== active || active.finished) return;
-    active.progress = Math.min(1, Math.max(0, (now - start) / active.duration));
+    active.progress = Math.min(1, Math.max(0, (now - start) / duration));
     redrawDemo();
     if (active.progress < 1) active.animation = requestAnimationFrame(frame);
   }
@@ -426,6 +524,7 @@ function updateTools() {
   const demo = main.querySelector('.demo');
   if (demo) demo.hidden = paper;
   updatePaperControls();
+  updatePracticeDescription();
   setPressed('pencil', tool === 'pencil');
   setPressed('eraser', tool === 'eraser');
   main.querySelector('[data-action="undo"]').disabled = !data.strokes.length;
@@ -436,6 +535,35 @@ function updateTools() {
   session.canvas.style.cursor = tool === 'eraser' ? 'cell' : 'crosshair';
   main.querySelector('.board-head').hidden = paper;
   main.querySelector('.board-foot').hidden = paper;
+  if (session.finished) updateFinishMessage();
+}
+
+function updatePracticeDescription() {
+  const { data, finished, guide } = session;
+  const description = finished ? '' : practiceDescription(data);
+  guide.setAttribute('aria-hidden', String(data.drawingMode !== 'paper' || !description));
+  guide.setAttribute('aria-label', description);
+  main.querySelector('.demo')?.setAttribute('aria-label', ['Replay stroke', description].filter(Boolean).join('. '));
+}
+
+function updateFinishMessage() {
+  const { data, lesson } = session;
+  const savedProgress = data.completed === readStorage(lesson.id, null)?.completed;
+  const message = main.querySelector('#finish-message');
+  if (data.drawingMode === 'paper') {
+    message.textContent = savedProgress
+      ? 'Only your lesson progress is saved. Your drawing stays on your paper.'
+      : 'Your drawing stays on your paper. This browser could not save your progress.';
+  } else if (data.strokes.some(stroke => stroke.tool === 'pencil')) {
+    message.textContent = savedProgress ? `${lesson.title} is in your sketchbook.` : 'Save a PNG to keep your drawing.';
+  } else {
+    message.textContent = savedProgress ? 'Your lesson progress is saved.' : 'This browser could not save your progress.';
+  }
+}
+
+function nextStepLabel() {
+  const { lesson, data } = session;
+  return data.step === lesson.steps.length - 1 && (lesson.id !== 'little-fox' || data.foxActivity === 'tail') ? 'Finish' : 'Next';
 }
 
 function updatePaperControls() {
@@ -444,25 +572,39 @@ function updatePaperControls() {
   controls.hidden = data.drawingMode !== 'paper' || finished;
   if (controls.hidden) return;
   const stepNumber = data.step + 1;
-  const description = `Step ${stepNumber} of ${lesson.steps.length}. ${lesson.steps[data.step][0]}`;
+  const activity = foxActivities[data.foxActivity];
+  const description = activity?.title ?? `Step ${stepNumber} of ${lesson.steps.length}. ${lesson.steps[data.step][0]}`;
   const status = controls.querySelector('[role="status"]');
   if (status.textContent !== description) status.textContent = description;
   controls.querySelector('[data-action="back"]').disabled = data.step === 0;
-  controls.querySelector('[data-action="next"]').textContent = stepNumber === lesson.steps.length ? 'Finish' : 'Next';
+  controls.querySelector('[data-action="next"] span').textContent = nextStepLabel();
+  controls.querySelector('[data-action="skip"]').hidden = !activity;
 }
 
 function setStep(index) {
   if (index < 0 || index >= session.lesson.steps.length || index === session.data.step) return;
   session.data.step = index;
+  updateStep();
+}
+
+function setFoxActivity(activity) {
+  session.data.foxActivity = activity;
+  session.startClue = false;
+  updateStep();
+}
+
+function updateStep() {
   persist();
   renderPanel();
   updatePaperControls();
+  updatePracticeDescription();
   redrawReferences();
   playDemo();
   if (session.data.drawingMode !== 'paper') main.querySelector('.step-heading').focus({ preventScroll: true });
 }
 
 function finishLesson() {
+  delete session.data.foxActivity;
   session.data.completed = Date.now();
   persist();
   session.finished = true;
@@ -471,7 +613,39 @@ function finishLesson() {
   renderPanel();
   updateTools();
   redrawReferences();
-  main.querySelector('.finish-title').focus({ preventScroll: true });
+  main.querySelector('.finish-title').focus();
+}
+
+function showChallenge(open) {
+  history.replaceState(null, '', `#${open ? 'challenge' : 'done'}/${session.lesson.id}`);
+  render();
+  main.querySelector(open ? '.step-heading' : '[data-action="challenge"]').focus({ preventScroll: true });
+}
+
+function backStep() {
+  if (session.challenge) showChallenge(false);
+  else if (session.data.foxActivity === 'tail') setFoxActivity('marks');
+  else if (session.data.foxActivity === 'marks') setFoxActivity(undefined);
+  else setStep(session.data.step - 1);
+}
+
+function nextStep() {
+  const { data, lesson, challenge } = session;
+  if (challenge) showChallenge(false);
+  else if (data.foxActivity === 'marks') setFoxActivity('tail');
+  else if (data.step < lesson.steps.length - 1) setStep(data.step + 1);
+  else if (lesson.id === 'little-fox' && !data.foxActivity) setFoxActivity('marks');
+  else finishLesson();
+}
+
+function chooseTexture(texture) {
+  session.data.tailTexture = texture;
+  main.querySelectorAll('.texture').forEach(button => {
+    button.setAttribute('aria-pressed', String(button.dataset.action === `texture-${texture}`));
+  });
+  updatePracticeDescription();
+  persist();
+  playDemo();
 }
 
 function keepDrawing() {
@@ -489,6 +663,8 @@ function studioClick(event) {
   if (!session || !action) return;
   if (action.startsWith('step-')) {
     setStep(Number(action.slice(5)));
+  } else if (action.startsWith('texture-')) {
+    chooseTexture(action.slice(8));
   } else {
     const actions = {
       pencil: () => { session.tool = 'pencil'; updateTools(); },
@@ -502,12 +678,15 @@ function studioClick(event) {
       },
       save: savePng,
       replay: playDemo,
-      back: () => setStep(session.data.step - 1),
-      next: () => {
-        const next = session.data.step + 1;
-        if (next === session.lesson.steps.length) finishLesson();
-        else setStep(next);
+      back: backStep,
+      next: nextStep,
+      skip: nextStep,
+      'start-clue': () => {
+        session.startClue = !session.startClue;
+        event.target.closest('button').setAttribute('aria-pressed', String(session.startClue));
+        redrawDemo();
       },
+      challenge: () => showChallenge(true),
       remix: () => {
         const ideas = coachIdeas[session.lesson.category];
         document.querySelector('#remix').textContent = ideas[session.remix++ % ideas.length];
@@ -679,9 +858,10 @@ function savePng() {
 document.querySelectorAll('[data-icon-label]').forEach(element => { element.insertAdjacentHTML('afterbegin', icon(element.dataset.iconLabel)); });
 main.addEventListener('click', studioClick);
 window.addEventListener('hashchange', render);
+reducedMotion.addEventListener('change', () => { if (session) playDemo(); });
 window.addEventListener('pagehide', () => { if (session?.stroke) endStroke(); });
 window.addEventListener('keydown', event => {
-  if (!session || event.key.toLowerCase() !== 'z' || !(event.metaKey || event.ctrlKey)) return;
+  if (!session || session.challenge || event.key.toLowerCase() !== 'z' || !(event.metaKey || event.ctrlKey)) return;
   event.preventDefault();
   undoOrRedo(event.shiftKey);
 });
