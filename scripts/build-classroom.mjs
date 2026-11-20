@@ -43,7 +43,7 @@ await build({
   bundle: true,
   format: 'esm',
   platform: 'browser',
-  outfile: 'dist/server/index.js',
+  outfile: '.classroom-build/dist/server/index.js',
   legalComments: 'inline',
   plugins: [{
     name: 'embed-game-and-gallery',

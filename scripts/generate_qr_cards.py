@@ -14,7 +14,7 @@ from reportlab.pdfgen.canvas import Canvas
 from svglib.svglib import svg2rlg
 
 
-SITE_URL = "https://little-pencil-club.fort-rock.chatgpt.site/#draw/little-fox"
+SITE_URL = "https://little-pencil-club.fort-rock.chatgpt.site/"
 LOGO = Path(__file__).resolve().parent.parent / "dist" / "logo.svg"
 INK = HexColor("#2b2a3a")
 MUTED = HexColor("#565267")
@@ -50,8 +50,6 @@ def site_address(value):
         or port == 0
     ):
         raise argparse.ArgumentTypeError("enter an HTTP or HTTPS site URL without credentials")
-    if parts.path.rstrip("/").lower() == "/classroom":
-        raise argparse.ArgumentTypeError("use the public game URL for printable game cards")
     return value
 
 
@@ -138,18 +136,14 @@ def draw_card(pdf, x, y, width, height, matrix, url, logo, palette):
     draw_qr(pdf, matrix, qr_x, qr_y)
     pdf.linkURL(url, (qr_x, qr_y, qr_x + QR_SIZE, qr_y + QR_SIZE))
 
-    pdf.setFillColor(INK)
     pdf.setFont("Helvetica-Bold", 10)
     address = display_address(url, width - 22)
-    pdf.drawCentredString(center, y + 28, "Scan to draw")
+    pdf.drawCentredString(center, y + 27 if address else y + 20, "Scan to draw")
     if address:
         pdf.setFillColor(MUTED)
         pdf.setFont("Helvetica", 7)
-        pdf.drawCentredString(center, y + 19, address)
-        pdf.linkURL(url, (x + 10, y + 16, x + width - 10, y + 25))
-    pdf.setFillColor(MUTED)
-    pdf.setFont("Helvetica", 7)
-    pdf.drawCentredString(center, y + 8, "Need help? Ask a grown-up to line up the QR.")
+        pdf.drawCentredString(center, y + 14, address)
+        pdf.linkURL(url, (x + 10, y + 11, x + width - 10, y + 23))
 
 
 def draw_cut_lines(pdf, card_width, card_height):

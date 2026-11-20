@@ -105,7 +105,10 @@ test('classroom in workerd with isolated local D1 and R2', async t => {
     assert.match(script, /page === 'draw'/);
     assert.match(script, /saved\?\.mode : 'paper'/);
     assert.match(script, /function savePng/);
-    assert.match(await readFile('scripts/generate_qr_cards.py', 'utf8'), /chatgpt\.site\/#draw\/little-fox/);
+    const hosting = JSON.parse(await readFile('.openai/hosting.json', 'utf8'));
+    assert.equal(hosting.static.directory, 'dist');
+    assert.equal(hosting.d1 ?? null, null);
+    assert.equal(hosting.r2 ?? null, null);
   });
 
   await t.test('disabled environment or either missing storage binding fails closed', async () => {

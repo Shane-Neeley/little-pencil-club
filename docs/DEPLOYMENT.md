@@ -2,11 +2,11 @@
 
 ## Public game
 
-The published [Little Pencil Club Site](https://little-pencil-club.fort-rock.chatgpt.site/) serves the public game. The static `dist/` files work with any plain local file server. The lessons and current drawing tools use no API, account, database, or model. Sketchbook progress and saved strokes stay in that browser. Clearing site data removes them. Export a PNG to keep a separate copy.
+The published [Little Pencil Club Site](https://little-pencil-club.fort-rock.chatgpt.site/) serves the static game from `dist/`. A local file server can serve the same directory. The game uses no account, API, database, or model. Sketchbook progress and strokes stay in that browser. Export a PNG to keep a separate copy.
 
-## Classroom preview
+## Synthetic classroom preview
 
-Run from the repository root with Node.js 22 or newer.
+The gallery is a draft available for local testing. From the checkout, with Node.js 22 or newer:
 
 ```sh
 npm ci
@@ -14,44 +14,33 @@ npm test
 npm run dev
 ```
 
-Open [the local classroom](http://127.0.0.1:8787/classroom). The preview starts a loopback server and uses local, simulated D1 and R2 in the ignored `.classroom-preview/` directory. It only accepts coded sample drawings. It does not open a production connection.
+Open [the local classroom](http://127.0.0.1:8787/classroom). The server binds to loopback and uses simulated D1 and R2 in the ignored `.classroom-preview/` directory. It accepts server-generated samples only. `npm run build` writes the Worker to `.classroom-build/dist/server/index.js`, outside the public game's static files.
 
-For adult controls, supply your own random `CLASSROOM_PREVIEW_OWNER_KEY` of at least 32 characters to the local preview process via its environment. Open [Class controls](http://127.0.0.1:8787/classroom/review), then **Sign in to manage a class**. The local browser prompt uses username `adult` and the key as its password. Create a sample class and a QR, then open the sample invite in two separate browser profiles. Select one of the sample drawings to exercise sharing, or choose the uncertain sample to observe a closed rejection. Use **Report** as a class member and **Remove** in adult controls. Stop the preview and remove `.classroom-preview/` to reset the local data.
+For adult controls, pass a random `CLASSROOM_PREVIEW_OWNER_KEY` of at least 32 characters in the preview process environment. Open [Class controls](http://127.0.0.1:8787/classroom/review), choose **Sign in to manage a class**, and use username `adult` and the local key. Create a sample class and open its QR in two separate browser profiles. Share a sample, try the uncertain screening result, **Report** a drawing as a member, and **Remove** it in adult controls. To reset the local test data, stop the preview and remove `.classroom-preview/`.
 
-## ChatGPT Sites Worker
+## Separate owner-private hosted verification
 
-The original public Site remains the public game. This branch builds a Worker candidate with `npm run build`, which writes `dist/server/index.js` while retaining the existing game files. For an authorized publication, open the canonical Site source with the official Sites helper, reconcile the current source, and use that helper to package the exact committed build and migrations. A fork must use its own Site project ID and fresh storage. Keep the owner and audience settings of any existing Site intact.
+This is a future verification path. The public Site uses its existing static hosting manifest. Keep the test Site, its source, and its storage separate from the public project.
 
-| Component | Binding and role | Verification |
-| --- | --- | --- |
-| ChatGPT Sites | Runs the existing game. The Worker candidate uses the documented Sites fetch entry point. | The public static Site is live. The gallery Worker was tested locally. |
-| D1 | `DB` stores class deadlines, hashed invite and membership credentials, and drawing metadata. Migrations live in `drizzle/`. | The migration, queries, and persistence were exercised in a local D1 simulation. |
-| R2 | `BUCKET` stores generated PNG bytes. The Worker serves them through authorized same-origin routes. | Private access at the application layer, deletion, and R2 bytes were exercised locally. Hosted binding, bucket access policy, and retention still need production verification. |
+| Prerequisite | Documented support and verification status |
+| --- | --- |
+| Owner-private publication | ChatGPT Sites supports private publication and provides an owner-only deployment operation. A future test project needs its own project ID and confirmed owner-only access. Check any workspace-admin exceptions before relying on the boundary. [ChatGPT Sites help](https://help.openai.com/en/articles/20001339-creating-and-using-chatgpt-sites) |
+| Verified hosted identity | Sites documents dispatch-provided, Site-scoped `oai-authenticated-user-id` for signed-in visitors. The draft matches that ID against the configured adult and class owner. The local fixture does not verify hosted header handling. |
+| Dedicated D1 and R2 | Sites documents provisioning `d1` and `r2` from a Worker manifest. `DB` holds class, invite, session and artwork metadata. `BUCKET` holds generated PNG bytes. Both bindings and independent persistence passed in the local simulator. Verify the hosted resources are dedicated to the test project and that the bucket has no public access or public object URLs. [Sites developer guide](https://learn.chatgpt.com/docs/sites) · [R2 bucket access](https://developers.cloudflare.com/r2/buckets/create-buckets/) |
+| Unattended expiration | Sites supports linked cloud schedules for a published Site when enabled for the account. Each run needs verified access to its cleanup writer without an open browser. The draft's adult cleanup route requires a browser role and same-origin request. The Worker also exports a scheduled handler. Sites support for wiring Cloudflare Cron to that handler is unverified. [Sites schedules](https://help.openai.com/en/articles/20001339-creating-and-using-chatgpt-sites) · [Cloudflare Cron Triggers](https://developers.cloudflare.com/workers/configuration/cron-triggers/) |
 
-No D1 blob fallback or other storage provider adapter is shipped. An alternate store would need an implementation of the database and object operations currently used by the Worker, plus concurrency, access, deletion, and expiry tests.
+For a later authorized test:
 
-### Runtime switches
+1. Register a separate Site and confirm owner-only access before using the private deployment operation. In a separate checkout, use the test Site's returned project ID in its hosting manifest. Omit static hosting there and declare `d1: DB` and `r2: BUCKET`. Stage the verified Worker as `dist/server/index.js` and copy `classroom/drizzle/` to the test checkout's root `drizzle/` for packaging. Tie the archive to the exact test source commit using the Sites source helper. The gallery switch starts off.
+2. With synthetic mode off, use a temporary owner-only server check on the private test build to verify platform identity. Check that signed-out requests are denied and that an untrusted caller-supplied identity header cannot replace the signed-in owner's Site identity. Set `CLASSROOM_ADMIN_USER_ID` to the authenticated Site-scoped ID through the test Site environment only. Set `CLASSROOM_SYNTHETIC_ENABLED=1` only for the approved test. Apply the settings to the exact test source and recheck authorization on the resulting deployment before writing fixtures. The server accepts preset samples in every enabled configuration. Keep identifiers and credentials out of source and logs.
+3. In two isolated browser profiles signed in as the owner, create distinct classroom sessions with synthetic fixtures and test direct image access with and without membership, cross-class denial, and revocation. Use an owner-only temporary check to confirm the D1 row and R2 bytes independently through their bindings. Verify that removal deletes both, including when checked from a fresh request. Keep object keys, invite links, and images out of the verification report.
+4. Choose the trigger before seeding fixtures. The documented Sites option is a linked cloud schedule calling a narrowly scoped cleanup writer on the dedicated private Site. That writer and fresh-task authorization still need implementation and validation. Sites service access, when provided, is separate from browser identity and must be available to the scheduled run without secrets in its prompt. Alternatively, use the Worker handler only if Sites documents a supported Cron binding for this project. Demonstrate an actual unattended run after a synthetic expiry and independently confirm neither D1 rows nor R2 objects remain. An R2 lifecycle rule, if configurable on the managed bucket, can provide an object-only backstop and may delete after the deadline. [R2 lifecycle timing](https://developers.cloudflare.com/r2/buckets/object-lifecycles/)
+5. Record the tested version and results, clear the synthetic data, remove temporary verification routes, disable the feature switch, and retire the private test and its trigger as agreed. Keep the prototype local if owner-only access, resource isolation, or unattended cleanup cannot be verified.
 
-- `CLASSROOM_SYNTHETIC_ENABLED` defaults to off. The value `1` enables the synthetic gallery when both storage bindings work. The server rejects arbitrary files and enrollment outside the sample workflow in every configuration.
-- `CLASSROOM_ADMIN_USER_ID` is the configured adult's verified Site-scoped identity, matched server-side with the platform's `oai-authenticated-user-id`. Only the recorded owner can manage a specific sample class. Configure the identity in the Site environment and keep it out of client code and source. Verify that the exact hosted build receives authenticated identity only through Sites before enabling the gallery there.
-- No OpenAI API key, model, or billable AI service is used. ChatGPT sign-in supplies adult identity only when the gallery is hosted on Sites. Keep any future optional provider credentials server-side.
+A separate Site and storage, authorization to create them, a supported cleanup writer with unattended access, and an accepted expiry and teardown window remain future decisions. No alternate storage provider adapter or D1 blob fallback is implemented.
 
-### Retention and pilot gate
+## Retention and real classroom gate
 
-The pilot caps classes at 24 hours, QR invites and memberships at two hours, active sessions at 48 per invite, ongoing submissions at two per membership and 12 per class, and stored drawings at 24 per class across four classes. The generated PNGs are 192 × 132 pixels and capped at 16 KiB. Invite rotation and revocation invalidate sessions immediately on their next request. Reported drawings become unavailable to the class immediately. Adult removal deletes the metadata and private object.
+The synthetic gallery caps classes at 24 hours, QR invites and memberships at two hours, ongoing submissions at two per member and 12 per class, and stored drawings at 24 per class across four classes. A class invite admits up to 48 active sessions. Generated PNGs are 192 × 132 pixels and capped at 16 KiB. Expired or revoked sessions are denied on their next request. Reports hide drawings for class members. Adult removal deletes the metadata and private object. Local **Clear expired samples** invokes the cleanup code.
 
-Expired items stop being readable at their deadline. The Worker includes cleanup for expired records, abandoned writes, and orphaned objects, available through the adult **Clear expired samples** control and a scheduled handler. Before hosted enablement, verify a supported unattended trigger and private R2 expiry policy on the exact deployment, and confirm deletion behavior for storage and backups. A handler alone does not schedule it.
-
-Before a real pilot, obtain school and caregiver approval and verify retention and deletion. A future plan can start with local crop and preview, local face/photo/text risk checks, and retake or optional local adult help when a result is uncertain. The server must independently decide whether artwork is drawing-only and age-appropriate before it persists or appears in the gallery. Rejected or uncertain files must not be stored, shared, or sent for generation. Class adults manage access, reports and removals. Local animation remains the default plan. Evaluate any optional bring-your-own provider only on approved synthetic or adult fixtures before considering it for use. The [optional intelligence plan](INTELLIGENCE.md) describes how to evaluate a provider. This build has no provider integration, model, or credentials.
-
-## Print public game QR cards
-
-The local generator makes one US Letter sheet with nine Pencil Pal cards. The default QR opens directly to Little fox. Sample class invites use separate QR codes managed from the classroom controls.
-
-```sh
-python3 -m venv .venv
-.venv/bin/python -m pip install -r scripts/requirements-qr.txt
-.venv/bin/python scripts/generate_qr_cards.py --output little-pencil-club-qr-cards.pdf
-```
-
-For a fork, pass its public game URL using `--url`. Print at actual size (100%) and cut along the dotted lines.
+Real enrollment and photo uploads are unavailable. A real pilot would require school and caregiver approval, verified retention and deletion, and a validated server-side drawing-only and age-appropriate screening policy that rejects uncertain input before persistence. The [optional intelligence plan](INTELLIGENCE.md) describes a possible later provider evaluation. No API key, model, or billable AI service is used by the game or gallery draft.
