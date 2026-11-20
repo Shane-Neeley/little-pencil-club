@@ -3,6 +3,7 @@
 Install Python Playwright and run playwright install chromium, or set
 PENCIL_TEST_CHROMIUM_PATH to use an existing Chromium executable.
 For WebKit, run playwright install webkit and set PENCIL_TEST_BROWSER=webkit.
+Set PENCIL_TEST_WEBKIT_PATH to use an existing WebKit executable.
 """
 
 import base64
@@ -35,7 +36,8 @@ class FoxLessonTest(unittest.TestCase):
         playwright = cls.enterClassContext(sync_playwright())
         browser = os.environ.get("PENCIL_TEST_BROWSER", "chromium")
         if browser == "webkit":
-            cls.browser = playwright.webkit.launch()
+            executable = os.environ.get("PENCIL_TEST_WEBKIT_PATH")
+            cls.browser = playwright.webkit.launch(executable_path=executable)
         else:
             executable = os.environ.get("PENCIL_TEST_CHROMIUM_PATH")
             cls.browser = playwright.chromium.launch(executable_path=executable)
@@ -314,21 +316,38 @@ class FoxLessonTest(unittest.TestCase):
         self.assertEqual(size_and_ink, [1600, 1104, True])
 
     def test_paper_layouts(self):
-        for width, height in [
-            (320, 568), (430, 932), (568, 320), (932, 430),
-            (744, 1133), (1133, 744), (820, 1180), (1180, 820),
-            (1024, 1366), (1366, 1024),
+        for width, height, touch in [
+            (320, 568, True), (375, 550, True), (390, 664, True), (430, 932, True),
+            (568, 320, True), (730, 360, True), (731, 360, True), (812, 375, True),
+            (932, 430, True), (744, 1133, True), (1133, 744, True),
+            (820, 1180, True), (1180, 820, True), (1024, 1366, True), (1366, 1024, True),
+            (1440, 900, False),
         ]:
             with self.subTest(width=width, height=height):
-                page = self.page_at(width, height)
+                page = self.page_at(width, height, touch=touch)
                 self.assert_no_overflow(page, width)
-                self.open_fox(page)
-                self.assert_paper_layout(page, width, height, ["Back", "Replay", "Next"])
-                self.to_tail(page)
+                self.open_fox(page, touch=touch)
+                for _ in range(5):
+                    self.assert_paper_layout(page, width, height, ["Back", "Replay", "Next"])
+                    self.press_paper_control(page, "Next", touch)
+                expect(page.get_by_role("heading", name="Pick a tail pattern")).to_be_visible()
                 self.assert_paper_layout(page, width, height, ["Back", "Replay", "Finish", "Skip"])
-                page.get_by_role("link", name="Lessons", exact=True).tap()
-                self.open_basics(page)
+                self.press_paper_control(page, "Finish", touch)
+                expect(page.get_by_role("heading", name="You drew it!")).to_be_visible()
+                page.get_by_role("link", name="Lessons", exact=True).click()
+                self.open_basics(page, touch=touch)
                 self.assert_paper_layout(page, width, height, ["Back", "Replay", "Finish", "Skip"])
+                self.press_paper_control(page, "Skip", touch)
+                expect(page.get_by_role("heading", name="You drew it!")).to_be_visible()
+
+    def press_paper_control(self, page, name, touch):
+        # Coordinate input exercises the visible hit target without scrolling it into view.
+        button = self.paper_control(page, name).bounding_box()
+        x, y = button["x"] + button["width"] / 2, button["y"] + button["height"] / 2
+        if touch:
+            page.touchscreen.tap(x, y)
+        else:
+            page.mouse.click(x, y)
 
     def assert_no_overflow(self, page, width):
         self.assertLessEqual(page.evaluate("document.documentElement.scrollWidth"), width)
@@ -339,8 +358,16 @@ class FoxLessonTest(unittest.TestCase):
         guide = page.locator("#guide").bounding_box()
         self.assertGreaterEqual(guide["height"], 115)
         for name in controls:
-            button = self.paper_control(page, name).bounding_box()
+            control = self.paper_control(page, name)
+            button = control.bounding_box()
             self.assertGreaterEqual(button["height"], 44)
             self.assertGreaterEqual(button["width"], 44)
             self.assertGreaterEqual(button["y"], guide["y"] + guide["height"] - 1)
             self.assertLessEqual(button["y"] + button["height"], height)
+            if control.is_enabled():
+                self.assertTrue(control.evaluate("""button => {
+                    const bounds = button.getBoundingClientRect();
+                    const hit = document.elementFromPoint(
+                        bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+                    return button.contains(hit);
+                }"""), f"{name} must be hittable without scrolling")
