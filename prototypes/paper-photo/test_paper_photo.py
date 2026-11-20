@@ -8,15 +8,19 @@ import os
 from pathlib import Path
 import random
 import re
+import shutil
 import struct
+from tempfile import TemporaryDirectory
 from threading import Thread
 import unittest
 import zlib
+from urllib.error import HTTPError
+from urllib.request import urlopen
 
 from playwright.sync_api import expect, sync_playwright
 
 
-DIST = Path(__file__).resolve().parents[2] / "dist"
+from build_fork import DIST, build_fork
 PROFILES = ("iPad Pro 11", "iPad Pro 11 landscape")
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 SOURCE_TAG = b"SYNTHETIC_SOURCE_METADATA"
@@ -116,10 +120,18 @@ def take_snapshot(page, name):
 class PaperPhotoTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.server = ThreadingHTTPServer(("127.0.0.1", 0), partial(QuietHandler, directory=str(DIST)))
+        temporary = TemporaryDirectory()
+        cls.addClassCleanup(temporary.cleanup)
+        root = Path(temporary.name)
+        cls.normal = root / "normal"
+        cls.fork = build_fork(root / "fork")
+        shutil.copytree(DIST, cls.normal)
+        cls.server = ThreadingHTTPServer(("127.0.0.1", 0), partial(QuietHandler, directory=str(root)))
         cls.server_thread = Thread(target=cls.server.serve_forever, daemon=True)
         cls.server_thread.start()
-        cls.game = f"http://127.0.0.1:{cls.server.server_port}/"
+        site = f"http://127.0.0.1:{cls.server.server_port}/"
+        cls.normal_url = site + "normal/"
+        cls.game = site + "fork/"
         cls.base = cls.game + "paper-photo/"
         cls.playwright = sync_playwright().start()
         cls.addClassCleanup(cls.playwright.stop)
@@ -243,7 +255,8 @@ class PaperPhotoTests(unittest.TestCase):
                 saved_image = page.locator("#saved-image")
                 page.wait_for_function("document.querySelector('#saved-image').naturalWidth > 0")
                 self.assertEqual(
-                    saved_image.evaluate("""image => {
+                    saved_image.evaluate("""async image => {
+                        await image.decode();
                         const c = document.createElement('canvas');
                         c.width = image.naturalWidth;
                         c.height = image.naturalHeight;
@@ -372,6 +385,28 @@ class PaperPhotoTests(unittest.TestCase):
                     self.assertEqual(errors, [])
                 finally:
                     context.close()
+
+    def test_normal_static_package_stays_photo_free(self):
+        expected = {"app.js", "art.js", "coach.js", "index.html", "lessons.js", "logo.svg", "style.css"}
+        self.assertEqual({file.name for file in DIST.iterdir()}, expected)
+        self.assertEqual({file.name for file in self.normal.iterdir()}, expected)
+        for name in expected:
+            self.assertEqual((DIST / name).read_bytes(), (self.normal / name).read_bytes())
+        with urlopen(self.normal_url, timeout=3) as response:
+            self.assertIn(b"Ages 13+ (16+ in the EU", response.read())
+        with self.assertRaises(HTTPError) as missing:
+            urlopen(self.normal_url + "paper-photo/", timeout=3)
+        self.assertEqual(missing.exception.code, 404)
+        self.assertNotIn("./paper-photo/", (self.normal / "app.js").read_text(encoding="utf-8"))
+        self.assertEqual({file.name for file in self.fork.iterdir()}, expected | {"paper-photo"})
+        self.assertEqual(
+            {file.name for file in (self.fork / "paper-photo").iterdir()},
+            {"index.html", "paper-photo.js", "style.css"},
+        )
+        with self.assertRaises(ValueError):
+            build_fork(DIST / "paper-photo")
+        with self.assertRaises(FileExistsError):
+            build_fork(self.fork)
 
     def test_input_and_storage_bounds(self):
         with self.offline_tab(PROFILES[0]) as (page, _load_page):

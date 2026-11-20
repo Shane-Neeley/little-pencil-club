@@ -223,8 +223,8 @@ function renderLibrary() {
   main.innerHTML = `
     <section class="hero" aria-labelledby="home-title">
       <div class="hero-copy">
-        <h1 id="home-title">Grab your <em>paper!</em></h1>
-        <p>Pick up a real pencil. Let’s draw!</p>
+        <h1 id="home-title">Build your <em>drawing skills.</em></h1>
+        <p>Pick up a pencil and follow the lines on paper, one step at a time.</p>
         <div class="hero-actions">
           <a class="primary" href="#draw/${fox.id}">${icon('pencil')} ${dataFor(fox).step && !dataFor(fox).completed ? 'Continue little fox' : 'Draw the little fox'}</a>
           <a class="quiet" href="#draw/pencil-basics">Pencil Basics</a>
@@ -292,10 +292,6 @@ function renderBook() {
   main.innerHTML = `
     <h1 class="book-heading">Your sketchbook</h1>
     <p class="book-description">${completed} of ${lessons.length} lessons finished. Your on-screen drawings stay in this browser.</p>
-    <section class="book-paper" aria-label="Paper photos">
-      <a class="secondary" href="./paper-photo/">Keep a paper drawing</a>
-      <p>Crop and save a photo in this browser.</p>
-    </section>
     ${started.length ? `<div class="card-grid">${started.map(lesson => previewCard(lesson, true)).join('')}</div>` : `
       <section class="empty-book">${icon('book')}<h2>A fresh page</h2>
         <p>Start any lesson. Come back here to see what you’ve tried.</p>

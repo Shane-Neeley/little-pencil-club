@@ -17,8 +17,7 @@ h1, h2, p { margin: 0; }
 h1, h2 { font-family: ui-rounded, system-ui, sans-serif; line-height: 1.16; text-wrap: balance; }
 h1 { font-size: clamp(2.05rem, 5vw, 3.4rem); letter-spacing: -.04em; }
 h2 { font-size: clamp(1.35rem, 3vw, 1.8rem); letter-spacing: -.02em; }
-.header-meta { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .65rem; margin-block-end: .65rem; }
-.brand { font-weight: 750; color: var(--purple); }
+.brand { margin-block-end: .3rem; font-weight: 750; color: var(--purple); }
 .local, .panel p { margin-block-start: .45rem; color: var(--muted); }
 .panel {
   padding: clamp(1rem, 3.5vw, 1.9rem);

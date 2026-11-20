@@ -1,0 +1,4 @@
+.lab { grid-column: 1 / -1; }
+.lab h2 { margin: 0; font-size: 1.15rem; }
+.lab p { color: #625369; }
+.mock-gif { width: min(100%, 360px); height: auto; }

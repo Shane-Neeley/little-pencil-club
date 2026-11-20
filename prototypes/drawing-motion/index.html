@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Make it move · Little Pencil Club</title>
+  <link rel="stylesheet" href="./motion.css">
+  <script defer src="./motion.js"></script>
+</head>
+<body>
+  <main class="page" data-motion-demo>
+    <header class="heading">
+      <p class="club">Little Pencil Club</p>
+      <h1>Make it <em>move!</em></h1>
+    </header>
+
+    <figure class="drawing">
+      <div class="stage">
+        <img class="artwork" data-motion-image src="./jellyfish.png" width="600" height="500"
+          alt="Pencil drawing of a smiling purple jellyfish with curly tentacles">
+      </div>
+      <div class="frames" data-motion-frames role="group" aria-label="Still frames" hidden></div>
+    </figure>
+
+    <div class="controls">
+      <fieldset>
+        <legend>Pick a move</legend>
+        <div class="choices">
+          <label class="choice">
+            <input type="radio" name="drawing-motion" value="wiggle" data-motion-effect checked>
+            <span><i class="mark wiggle" aria-hidden="true">≋</i> Wiggle</span>
+          </label>
+          <label class="choice">
+            <input type="radio" name="drawing-motion" value="bounce" data-motion-effect>
+            <span><i class="mark bounce" aria-hidden="true">↟</i> Bounce</span>
+          </label>
+        </div>
+      </fieldset>
+
+      <div class="actions">
+        <button class="play" type="button" data-motion-play>
+          <i class="play-icon" aria-hidden="true"></i> <span data-motion-play-label>Play</span>
+        </button>
+        <button class="stop" type="button" data-motion-stop disabled>
+          <i class="stop-icon" aria-hidden="true"></i> Stop
+        </button>
+      </div>
+      <p class="status" data-motion-status role="status">Ready to play.</p>
+      <a class="save" href="./jellyfish.png" download="jellyfish.png">Save still PNG</a>
+    </div>
+  </main>
+</body>
+</html>
