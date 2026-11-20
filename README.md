@@ -9,6 +9,8 @@
 
 Progress and drawings live in this browser's local storage. Clearing site data removes them. The game uses no accounts, tracking, or API calls.
 
+See the [ranked roadmap](ROADMAP.md) for what comes next and the [issue tracker](https://github.com/Shane-Neeley/little-pencil-club/issues) for work ready to pick up.
+
 ## Run locally
 
 With Python 3 installed, run this command from the checkout and open [the local game](http://127.0.0.1:8473/).
