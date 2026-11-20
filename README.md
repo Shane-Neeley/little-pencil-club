@@ -1,35 +1,21 @@
 # Little Pencil Club
 
-[Open Little Pencil Club](https://little-pencil-club.fort-rock.chatgpt.site/) in Safari on iPad or in a modern desktop or mobile browser. Start with **Little fox**, or choose from 32 lessons in Animals, Food, Fashion, Nature, Things, and Fantasy.
-
-- Lessons open in **Paper** mode with a large animated example. Follow along on paper with **Back**, **Replay**, and **Next** below the picture.
-- For drawing on screen, choose **Trace on screen** or **Blank canvas** in the mode menu. Open **Pencil tip** for detailed help.
-- Use Apple Pencil, a finger, or a mouse. Turn on **Pencil only** below the canvas if you prefer to draw with the stylus while resting your hand on the screen.
-- Finish a lesson to unlock a remix idea. Find your work in **Sketchbook**, and use **Save** to download a PNG you can keep.
-
-Progress and drawings live in this browser's local storage. Clearing site data removes them. The game uses no accounts, tracking, or API calls.
-
-See the [ranked roadmap](ROADMAP.md) for what comes next and the [issue tracker](https://github.com/Shane-Neeley/little-pencil-club/issues) for work ready to pick up.
+[Open Little Pencil Club](https://little-pencil-club.fort-rock.chatgpt.site/) to draw on paper, trace on screen, or use a blank canvas. Progress and Sketchbook drawings stay in your browser. Use PNG export to keep a separate copy.
 
 ## Run locally
 
-With Python 3 installed, run this command from the checkout and open [the local game](http://127.0.0.1:8473/).
+From the checkout, start a static server with Python 3 and open [the local game](http://127.0.0.1:8473/).
 
 ```sh
 python3 -m http.server 8473 --bind 127.0.0.1 --directory dist
 ```
 
-The app uses plain HTML, CSS, and JavaScript. ChatGPT Sites serves `dist/` directly. Lesson instructions and art paths live in `dist/lessons.js`, and the same art paths drive the previews, replays, and tracing guides. To check syntax with Node.js, run:
+- [Ranked roadmap](ROADMAP.md)
+- [School QR and iPad verification](https://github.com/Shane-Neeley/little-pencil-club/issues/4)
+- [Synthetic classroom preview and deployment notes](docs/DEPLOYMENT.md)
+- [Project issues](https://github.com/Shane-Neeley/little-pencil-club/issues)
 
-```sh
-for file in dist/*.js; do
-  node --check "$file" || exit 1
-done
-```
-
-## Teaching references
-
-Simply Draw's starter fish builds from an outline to shading and patterns. ShadowDraw reveals an artist's strokes in sequence. Art for Kids Hub teaches by drawing alongside the learner. Little Pencil Club uses original lessons, silent replays, and optional tips you can open at your own pace. [Simply Draw](https://draw-help.hellosimply.com/en/articles/10258428-how-soon-will-i-get-to-draw-something) · [ShadowDraw](https://www.shadowdrawapp.com/features) · [Art for Kids Hub](https://artforkidshub.com/)
+The lessons use original art, silent replays, and optional tips. Teaching references include [Simply Draw](https://draw-help.hellosimply.com/en/articles/10258428-how-soon-will-i-get-to-draw-something), [ShadowDraw](https://shadowdrawapp.com/features), and [Art for Kids Hub](https://artforkidshub.com/).
 
 ## Print QR cards
 

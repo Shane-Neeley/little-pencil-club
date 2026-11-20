@@ -1,0 +1,19 @@
+{
+  "name": "little-pencil-club",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/build-classroom.mjs",
+    "dev": "node scripts/preview-classroom.mjs",
+    "test": "npm run build && node --test tests/*.test.mjs"
+  },
+  "dependencies": {
+    "qrcode-generator": "2.0.4"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "miniflare": "4.20260730.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
