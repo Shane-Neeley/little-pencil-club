@@ -1,6 +1,11 @@
 # Changelog
 
-## Unreleased
+## Featured sketches and portable progress
+
+- Five featured drawings gain textured graphite, finishing accents and a choice you can make while drawing. Little owl also gains a sleepy expression.
+- Each topic gains two original lessons. Overlapping pebbles and leaf observation bring the library to 49, with independent practice in Skills.
+- Paper controls fit shorter phone screens, including the leaf reference lesson.
+- Sketchbook adds local Wiggle and direct PNG download for digital drawings. A progress file moves completed-lesson checkmarks between devices.
 
 ## November 19, 2026
 

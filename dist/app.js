@@ -33,6 +33,7 @@ function icon(name) {
 
 const main = document.querySelector('#main');
 const notice = document.querySelector('#notice');
+const featuredLessonIds = ['little-fox', 'moon-moth', 'high-top', 'camp-mug', 'cloud-ship'];
 const lessonById = new Map(lessons.map(lesson => [lesson.id, lesson]));
 const drawings = new Map();
 const drawingModes = [
@@ -57,6 +58,7 @@ let filter = 'All';
 let levelFilter = 0;
 let session;
 let observer;
+let cardVisibility;
 let noticeTimeout;
 let pencilOnly = readStorage('pencil-only', false);
 
@@ -97,7 +99,7 @@ function dataFor(lesson) {
     const data = {
       step,
       strokes,
-      completed: Number(saved?.completed) || 0,
+      completed: Number(saved?.completed) || (readStorage('finished/' + lesson.id, false) ? 1 : 0),
       drawingMode: drawingModesFor(lesson).some(([id]) => id === mode) ? mode : 'paper',
     };
     if (lesson.id === 'little-fox') {
@@ -106,6 +108,7 @@ function dataFor(lesson) {
       }
       data.tailTexture = Object.hasOwn(foxTailTextures, saved?.tailTexture) ? saved.tailTexture : 'fluffy';
     }
+    if (drawingChoices[lesson.id]) data.alternate = saved?.alternate === true;
     drawings.set(lesson.id, data);
   }
   return drawings.get(lesson.id);
@@ -131,6 +134,13 @@ function render() {
   if (session) cancelAnimationFrame(session.animation);
   session = null;
   observer?.disconnect();
+  cardVisibility?.disconnect();
+  cardVisibility = new IntersectionObserver(entries => {
+    for (const entry of entries) {
+      if (entry.isIntersecting) observer.observe(entry.target);
+      else observer.unobserve(entry.target);
+    }
+  }, { rootMargin: '350px' });
   observer = new ResizeObserver(entries => {
     entries.forEach(({ target }) => {
       if (target.classList.contains('surface')) {
@@ -148,7 +158,9 @@ function render() {
     page = dataFor(lesson).completed ? 'done' : 'draw';
     history.replaceState(null, '', `#${page}/${id}`);
   }
-  const challenge = page === 'challenge' && id === 'pencil-basics' && Boolean(dataFor(lesson).completed);
+  const challenge = page === 'challenge'
+    && (id === 'pencil-basics' || Boolean(lesson?.transfer))
+    && Boolean(dataFor(lesson).completed);
   const studio = lesson && (page === 'draw' || page === 'done' || challenge);
   const book = page === 'sketchbook';
   document.querySelector('#nav-lessons').toggleAttribute('aria-current', !book);
@@ -165,13 +177,6 @@ function render() {
   window.scrollTo(0, 0);
 }
 
-function watchCards() {
-  main.querySelectorAll('.picture-canvas').forEach(canvas => {
-    paintCard(canvas);
-    observer.observe(canvas);
-  });
-}
-
 function paintCard(canvas) {
   const lesson = lessonById.get(canvas.dataset.lesson);
   if (canvas.dataset.ink && dataFor(lesson).strokes.some(stroke => stroke.tool === 'pencil')) {
@@ -179,6 +184,8 @@ function paintCard(canvas) {
   } else {
     drawExample(canvas, lesson, undefined, {
       decorative: true,
+      alternate: Boolean(canvas.dataset.ink && dataFor(lesson).alternate),
+      tailTexture: canvas.dataset.ink ? dataFor(lesson).tailTexture : undefined,
       activity: lesson.id === 'pencil-basics' ? 'marks' : undefined,
       hero: canvas.dataset.hero === 'true',
       scale: canvas.dataset.hero === 'true' ? 1.06 : 1,
@@ -269,16 +276,22 @@ function renderLibrary() {
 
 function renderLessonCards() {
   const cards = document.querySelector('#lesson-cards');
-  cards.querySelectorAll('canvas').forEach(canvas => observer.unobserve(canvas));
+  cards.querySelectorAll('canvas').forEach(canvas => {
+    observer.unobserve(canvas);
+    cardVisibility.unobserve(canvas);
+  });
   const visible = lessons.filter(lesson =>
     (filter === 'All' || lesson.category === filter) && (!levelFilter || lesson.level === levelFilter));
   document.querySelector('#lesson-count').textContent = `${visible.length} lessons`;
   main.querySelector('.level-help').textContent = difficulties[levelFilter - 1]?.help ?? '';
-  cards.innerHTML = visible.length ? visible.map(lesson => previewCard(lesson)).join('') : '<p class="no-lessons">Try another topic or level.</p>';
-  cards.querySelectorAll('canvas').forEach(canvas => {
-    paintCard(canvas);
-    observer.observe(canvas);
-  });
+  if (filter === 'All' && !levelFilter) {
+    const featured = featuredLessonIds.map(id => previewCard(lessonById.get(id))).join('');
+    const more = visible.filter(lesson => !featuredLessonIds.includes(lesson.id));
+    cards.innerHTML = `<h3 class="collection-heading">Featured sketches</h3>
+      <div class="featured-sketches">${featured}</div>
+      <h3 class="collection-heading">More to draw</h3>${more.map(lesson => previewCard(lesson)).join('')}`;
+  } else cards.innerHTML = visible.length ? visible.map(lesson => previewCard(lesson)).join('') : '<p class="no-lessons">Try another topic or level.</p>';
+  cards.querySelectorAll('.picture-canvas').forEach(canvas => cardVisibility.observe(canvas));
 }
 
 function renderBook() {
@@ -292,12 +305,17 @@ function renderBook() {
   main.innerHTML = `
     <h1 class="book-heading">Your sketchbook</h1>
     <p class="book-description">${completed} of ${lessons.length} lessons finished. Your on-screen drawings stay in this browser.</p>
-    ${started.length ? `<div class="card-grid">${started.map(lesson => previewCard(lesson, true)).join('')}</div>` : `
+    ${started.length ? `<div class="card-grid">${started.map(sketchbookCard).join('')}</div>` : `
       <section class="empty-book">${icon('book')}<h2>A fresh page</h2>
         <p>Start any lesson. Come back here to see what you’ve tried.</p>
         <a class="primary" href="#draw/${lessons[0].id}">Draw the little fox</a>
-      </section>`}`;
-  watchCards();
+      </section>`}
+    ${progressFileControls(completed > 0)}`;
+  main.querySelectorAll('.picture-canvas').forEach(canvas => {
+    paintCard(canvas);
+    observer.observe(canvas);
+  });
+  setupSketchbook();
 }
 
 function toolButton(name, label, action, text = '', pressed = '') {
@@ -307,8 +325,9 @@ function toolButton(name, label, action, text = '', pressed = '') {
 
 function renderStudio(lesson, finished, challenge) {
   const data = dataFor(lesson);
+  const reference = challenge ? undefined : lesson.reference;
   session = { lesson, data, finished, challenge, tool: 'pencil', redo: [], remix: 0 };
-  main.className = 'wrap studio';
+  main.className = `wrap studio${lesson.transfer ? ' observation-lesson' : ''}`;
   main.innerHTML = `
     <div class="lesson-heading">
       <h1>${lesson.title}</h1>
@@ -332,10 +351,16 @@ function renderStudio(lesson, finished, challenge) {
           </div>
           ${toolButton('save', 'Save drawing as PNG', 'save', 'Save')}
         </div>
+        ${reference ? `<div class="drawing-views">
+          <figure class="lesson-reference" ${finished ? 'hidden' : ''}>
+            <img src="${reference.src}" alt="${reference.alt}" width="560" height="380">
+            <figcaption>${reference.label}</figcaption>
+          </figure>` : ''}
         <div class="surface">
           <canvas id="guide" role="img" aria-hidden="true"></canvas>
           <canvas id="ink" aria-label="Drawing area. Draw with an Apple Pencil, finger, or mouse."></canvas>
         </div>
+        ${reference ? '</div>' : ''}
         <div class="paper-actions" role="group" aria-label="Paper lesson controls" hidden>
           <span class="sr-only" role="status"></span>
           <button class="secondary" type="button" data-action="back">${icon('back')} Back</button>
@@ -404,16 +429,18 @@ function renderStudio(lesson, finished, challenge) {
 function renderPanel() {
   const { lesson, data, finished, challenge } = session;
   const panel = main.querySelector('.lesson-panel');
+  const reference = main.querySelector('.lesson-reference');
+  if (reference) reference.hidden = finished;
   const previousCanvas = panel.querySelector('canvas');
   if (previousCanvas) observer.unobserve(previousCanvas);
   panel.classList.toggle('finish-sheet', finished);
   if (challenge) {
     panel.innerHTML = `
-      ${difficultyLabel(3)}
+      ${lesson.transfer ? '' : difficultyLabel(3)}
       <div class="transfer-paper" aria-hidden="true">${icon('paper')}${icon('pencil')}</div>
-      <h2 class="step-heading" tabindex="-1">Invent a moon kite</h2>
-      <p class="step-text">Draw a kite on paper. Use light marks on one side and dark marks on the other.</p>
-      <details class="hint"><summary>Show and tell</summary><p>Point to your darkest mark. What did you do to make it darker?</p></details>
+      <h2 class="step-heading" tabindex="-1">${lesson.transfer?.title ?? 'Invent a moon kite'}</h2>
+      <p class="step-text">${lesson.transfer?.prompt ?? 'Draw a kite on paper. Use light marks on one side and dark marks on the other.'}</p>
+      ${lesson.transfer ? '' : '<details class="hint"><summary>Show and tell</summary><p>Point to your darkest mark. What did you do to make it darker?</p></details>'}
       <div class="transfer-actions">
         <button type="button" class="secondary" data-action="back">${icon('back')} Back</button>
         <button type="button" class="primary" data-action="next">Done ${icon('check')}</button>
@@ -423,15 +450,15 @@ function renderPanel() {
   }
   if (finished) {
     const following = lessons[lessons.indexOf(lesson) + 1];
-    const next = following && following.id !== 'pencil-basics' ? following : lessons[0];
+    const next = following && following.category !== 'Skills' ? following : lessons[0];
     panel.innerHTML = `
       <div class="finish-icon">${icon('sparkle')}</div>
       <h2 class="finish-title" tabindex="-1">You drew it!</h2>
       <p id="finish-message"></p>
-      ${lesson.id === 'pencil-basics' ? `
+      ${lesson.id === 'pencil-basics' || lesson.transfer ? `
         <div class="challenge-invite">
-          <button class="secondary" type="button" data-action="challenge">${icon('sparkle')} Try Hard</button>
-          <p>Use light and dark on a new drawing, with no example.</p>
+          <button class="secondary" type="button" data-action="challenge">${icon('sparkle')} ${lesson.transfer ? 'Try on your own' : 'Try Hard'}</button>
+          <p>${lesson.transfer ? lesson.transfer.title : 'Use light and dark on a new drawing, with no example.'}</p>
         </div>` : ''}
       ${coachLessonIdeas[lesson.id] ? `<div class="coach-box">
         <strong>Give it a twist</strong>
@@ -446,8 +473,15 @@ function renderPanel() {
     return;
   }
   const activity = practiceActivities[activityFor(lesson, data)];
-  const [stepTitle, stepInstruction, guidance, hint] = lesson.steps[data.step];
+  const [stepTitle, stepInstruction, guidance, hint] = drawingVersion(lesson, data.alternate).steps[data.step];
   const { title = stepTitle, instruction = stepInstruction } = activity ?? {};
+  const tip = guidance || hint ? `<details class="hint"><summary>Pencil tip</summary><p>${guidance}</p><p>${hint}</p></details>` : '';
+  const choice = drawingChoices[lesson.id];
+  const choicePanel = choice?.step === data.step ? `<details class="hint art-choice">
+    <summary>${choice.prompt} · ${choice.labels[Number(Boolean(data.alternate))]}</summary>
+    <div class="practice-options" role="group" aria-label="${choice.prompt}">
+      ${choice.labels.map((label, i) => `<button type="button" class="secondary" data-action="art-${i}" aria-pressed="${Boolean(i) === Boolean(data.alternate)}">${label}</button>`).join('')}
+    </div><p>${hint}</p></details>` : '';
   panel.innerHTML = `
     <div class="step-progress">
       ${activity ? difficultyLabel(activity.level) : `
@@ -462,7 +496,7 @@ function renderPanel() {
     </button>
     <h2 class="step-heading" tabindex="-1">${title}</h2>
     <p class="step-text">${instruction}</p>
-    ${activity ? renderPracticeOptions(data) : `<details class="hint"><summary>Pencil tip</summary><p>${guidance}</p><p>${hint}</p></details>`}
+    ${activity ? renderPracticeOptions(data) : choicePanel || tip}
     <div class="step-actions">
       <button type="button" class="secondary" data-action="back" ${data.step === 0 ? 'disabled' : ''}>${icon('back')} Back</button>
       <button type="button" class="primary" data-action="next">${nextStepLabel()} ${icon('next')}</button>
@@ -487,14 +521,14 @@ function practiceDescription(lesson, data) {
   const activity = activityFor(lesson, data);
   if (activity === 'marks') return 'Two pencil marks. A thin, light line on the left. A thick, dark line on the right.';
   if (activity === 'tail') return `Fox tail with ${foxTailTextures[data.tailTexture].label.toLowerCase()} pattern.`;
-  return '';
+  return lesson.demoLabels?.[data.step] ?? '';
 }
 
 function redrawDemo() {
   if (!session || session.challenge) return;
   const { data, lesson, finished, guide, progress, startClue } = session;
   const activity = finished && lesson.id !== 'pencil-basics' ? undefined : activityFor(lesson, data);
-  const options = { progress: finished ? 1 : progress, activity, startClue, tailTexture: data.tailTexture };
+  const options = { progress: finished ? 1 : progress, activity, startClue, alternate: data.alternate, tailTexture: data.tailTexture };
   if (data.drawingMode === 'paper') {
     const step = finished ? lesson.steps.length - 1 : data.step;
     drawExample(guide, lesson, step, { ...options, teaching: !finished, scale: 1.1 });
@@ -508,7 +542,7 @@ function redrawReferences() {
   if (!session || session.challenge) return;
   const { lesson, data, finished, guide } = session;
   if (data.drawingMode !== 'paper') {
-    drawExample(guide, lesson, data.drawingMode === 'trace' && !finished ? data.step : -1, { guide: true });
+    drawExample(guide, lesson, data.drawingMode === 'trace' && !finished ? data.step : -1, { guide: true, alternate: data.alternate });
   }
   redrawDemo();
 }
@@ -567,7 +601,8 @@ function updatePracticeDescription() {
 
 function updateFinishMessage() {
   const { data, lesson } = session;
-  const savedProgress = data.completed === readStorage(lesson.id, null)?.completed;
+  const savedProgress = data.completed === readStorage(lesson.id, null)?.completed ||
+    Boolean(readStorage('finished/' + lesson.id, false));
   const message = main.querySelector('#finish-message');
   if (data.drawingMode === 'paper') {
     message.textContent = savedProgress
@@ -680,6 +715,12 @@ function studioClick(event) {
   if (!session || !action) return;
   if (action.startsWith('step-')) {
     setStep(Number(action.slice(5)));
+  } else if (action === 'art-0' || action === 'art-1') {
+    session.data.alternate = action === 'art-1';
+    updateStep();
+    const choice = main.querySelector('.art-choice');
+    choice.open = true;
+    choice.querySelector('[aria-pressed="true"]').focus({ preventScroll: true });
   } else if (action.startsWith('texture-')) {
     chooseTexture(action.slice(8));
   } else {
@@ -844,7 +885,7 @@ function undoOrRedo(redo) {
   persist();
 }
 
-function savePng() {
+function savePng(lesson = session.lesson, strokes = session.data.strokes) {
   const drawing = document.createElement('canvas');
   drawing.width = 1600;
   drawing.height = 1104;
@@ -853,23 +894,27 @@ function savePng() {
   ink.height = drawing.height;
   const inkContext = ink.getContext('2d');
   inkContext.scale(1.6, 1.6);
-  session.data.strokes.forEach(stroke => drawStroke(inkContext, stroke));
+  strokes.forEach(stroke => drawStroke(inkContext, stroke));
   const ctx = drawing.getContext('2d');
   ctx.fillStyle = '#fffdf7';
   ctx.fillRect(0, 0, drawing.width, drawing.height);
   ctx.drawImage(ink, 0, 0);
-  const name = `${session.lesson.id}-sketch.png`;
+  const name = `${lesson.id}-sketch.png`;
   drawing.toBlob(blob => {
     if (!blob) { showNotice('Could not create a PNG. Try Save again.'); return; }
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = name;
-    document.body.append(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 30000);
+    downloadBlob(blob, name);
   }, 'image/png');
+}
+
+function downloadBlob(blob, name) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = name;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 30000);
 }
 
 document.querySelectorAll('[data-icon-label]').forEach(element => { element.insertAdjacentHTML('afterbegin', icon(element.dataset.iconLabel)); });

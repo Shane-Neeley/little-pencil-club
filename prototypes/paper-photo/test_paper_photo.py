@@ -117,6 +117,12 @@ def take_snapshot(page, name):
         page.screenshot(path=Path(target) / (name + ".png"), full_page=True)
 
 
+# Only assets referenced from the static game entry point may load during the round trip.
+def game_entry_assets():
+    markup = (DIST / "index.html").read_text(encoding="utf-8")
+    return set(re.findall(r'(?:src|href)="\./([\w/-]+\.(?:js|css|svg))"', markup))
+
+
 class PaperPhotoTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -302,9 +308,7 @@ class PaperPhotoTests(unittest.TestCase):
                 expect(saved).to_be_hidden()
 
     def test_sketchbook_round_trip_keeps_lesson_progress(self):
-        game_assets = {self.game + path for path in (
-            "", "app.js", "art.js", "coach.js", "lessons.js", "logo.svg", "style.css"
-        )}
+        game_assets = {self.game + path for path in {""} | game_entry_assets()}
         photo_assets = {self.base + path for path in ("", "paper-photo.js", "style.css")}
         for profile in (*PROFILES, "iPhone 13"):
             with self.subTest(profile=profile):
@@ -363,6 +367,9 @@ class PaperPhotoTests(unittest.TestCase):
                     page.get_by_role("button", name="Save here").tap()
                     saved = page.get_by_role("region", name="Your saved drawing")
                     expect(saved).to_be_visible()
+                    page.emulate_media(reduced_motion="reduce")
+                    page.get_by_role("button", name="Wiggle").tap()
+                    expect(page.locator("#saved-image")).to_have_class("still-tilt")
                     with page.expect_download() as exported:
                         page.get_by_role("link", name="Download PNG").tap()
                     png = exported.value.path().read_bytes()
@@ -387,9 +394,11 @@ class PaperPhotoTests(unittest.TestCase):
                     context.close()
 
     def test_normal_static_package_stays_photo_free(self):
-        expected = {"app.js", "art.js", "coach.js", "index.html", "lessons.js", "logo.svg", "style.css"}
-        self.assertEqual({file.name for file in DIST.iterdir()}, expected)
-        self.assertEqual({file.name for file in self.normal.iterdir()}, expected)
+        expected = {"index.html", *game_entry_assets(), "references/leaf-widest.png"}
+        def files(directory):
+            return {file.relative_to(directory).as_posix() for file in directory.rglob("*") if file.is_file()}
+        self.assertEqual(files(DIST), expected)
+        self.assertEqual(files(self.normal), expected)
         for name in expected:
             self.assertEqual((DIST / name).read_bytes(), (self.normal / name).read_bytes())
         with urlopen(self.normal_url, timeout=3) as response:
@@ -398,7 +407,7 @@ class PaperPhotoTests(unittest.TestCase):
             urlopen(self.normal_url + "paper-photo/", timeout=3)
         self.assertEqual(missing.exception.code, 404)
         self.assertNotIn("./paper-photo/", (self.normal / "app.js").read_text(encoding="utf-8"))
-        self.assertEqual({file.name for file in self.fork.iterdir()}, expected | {"paper-photo"})
+        self.assertEqual(files(self.fork), expected | {f"paper-photo/{name}" for name in ("index.html", "paper-photo.js", "style.css")})
         self.assertEqual(
             {file.name for file in (self.fork / "paper-photo").iterdir()},
             {"index.html", "paper-photo.js", "style.css"},

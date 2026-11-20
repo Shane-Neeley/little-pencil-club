@@ -48,8 +48,10 @@ def build_fork(destination):
 
     app = replace_once((DIST / "app.js").read_text(encoding="utf-8"), BOOK_ANCHOR, BOOK_ANCHOR + BOOK_ENTRY)
     page = replace_once((PROTOTYPE / "index.html").read_text(encoding="utf-8"), EDITOR_BRAND, EDITOR_HEADER)
+    page = replace_once(page, '<button type="button" id="delete">',
+                        '<button type="button" id="wiggle">Wiggle</button>\n        <button type="button" id="delete">')
     game_style = (DIST / "style.css").read_text(encoding="utf-8") + BOOK_STYLE
-    photo_style = (PROTOTYPE / "style.css").read_text(encoding="utf-8") + EDITOR_STYLE
+    photo_style = (PROTOTYPE / "style.css").read_text(encoding="utf-8") + EDITOR_STYLE + "\n.still-tilt { transform: rotate(-5deg); }\n"
 
     shutil.copytree(DIST, destination)
     (destination / "app.js").write_text(app, encoding="utf-8")
@@ -58,7 +60,15 @@ def build_fork(destination):
     editor.mkdir()
     (editor / "index.html").write_text(page, encoding="utf-8")
     (editor / "style.css").write_text(photo_style, encoding="utf-8")
-    shutil.copyfile(PROTOTYPE / "paper-photo.js", editor / "paper-photo.js")
+    photo_js = (PROTOTYPE / "paper-photo.js").read_text(encoding="utf-8")
+    photo_js = replace_once(photo_js, "function showSaved(bytes) {", """function showSaved(bytes) {
+  savedImage.getAnimations?.().forEach(animation => animation.cancel());
+  savedImage.classList.remove('still-tilt');""")
+    wiggle_js = (DIST / "wiggle.js").read_text(encoding="utf-8")
+    (editor / "paper-photo.js").write_text(
+        photo_js + "\n" + wiggle_js + "\nbyId('wiggle').addEventListener('click', () => wiggleDrawing(savedImage));\n",
+        encoding="utf-8",
+    )
     return destination
 
 

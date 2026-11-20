@@ -1,5 +1,51 @@
 'use strict';
 
+// Each option replaces marks in one existing step. Replays, traces and the
+// finished page all resolve the same version of the lesson.
+const drawingChoices = {
+  'moon-moth': {
+    step: 3, prompt: 'Wing markings', labels: ['Moons', 'Eyespots'],
+    alternate: ['Design the markings', 'Draw an eyespot on each upper wing.', 'Wrap an almond shape around a small pupil on each wing.', 'Aim the pointed ends toward the wingtips.',
+      'M49 74 Q63 59 81 73 Q68 90 49 74Z M159 73 Q177 59 191 74 Q172 90 159 73Z',
+      'M66 69 a5 5 0 1 0 .1 0Z M175 69 a5 5 0 1 0 .1 0Z'],
+  },
+  'high-top': {
+    step: 4, prompt: 'Side panel', labels: ['Plain', 'Checkered'],
+    alternate: ['Check the side panel', 'Draw a small checkerboard on the side.', 'Draw two rows of squares. Shade every other square.', 'Follow the slight tilt of the shoe.',
+      'M86 112 L119 112 L132 129 L88 129Z M87 120 L125 120 M97 112 L102 129 M108 112 L117 129',
+      'M88 114 l5 4 M91 114 l5 4 M103 122 l6 5 M107 122 l6 5 M112 114 l5 4 M116 114 l5 4'],
+  },
+  'little-owl': {
+    step: 4, prompt: 'Expression', labels: ['Startled', 'Sleepy'],
+    alternate: ['Finish the feathers', 'Give your owl sleepy eyelids and soft feathers.', 'Draw a sagging curve across each eye. Add a few U shapes on the belly.', 'Droop the middle of each eyelid.',
+      'M81 80 Q97 95 113 80 M126 80 Q142 95 158 80 M86 84 l-2 3 M91 86 l-1 3 M148 86 l1 3 M153 84 l2 3',
+      'M102 115 q4 7 8 0 M117 115 q4 7 8 0 M132 115 q4 7 8 0 M110 128 q4 7 8 0 M126 128 q4 7 8 0 M117 141 q4 7 8 0'],
+  },
+  'camp-mug': {
+    step: 4, prompt: 'Enamel badge', labels: ['Peaks', 'Pine'],
+    alternate: ['Stamp a pine tree', 'Draw a pine badge and shade the base.', 'Stack two zigzags to make the little evergreen. Tuck a short trunk underneath.', 'Lean your base marks in the same direction.',
+      'M116 102 L105 117 L111 116 L101 128 L112 126 L102 137 L131 137 L121 126 L131 128 L120 116 L126 117Z M115 137 l0 5 l4 0 l0-5',
+      'M153 112 Q154 131 151 147 M158 104 Q159 128 155 148 M147 147 l-8 10 M139 150 l-6 8 M129 152 l-5 7'],
+  },
+  'cloud-ship': {
+    step: 1, prompt: 'Mast flag', labels: ['Swallowtail', 'Pennant'],
+    alternate: ['Raise the mast', 'Top the mast with a long pennant.', 'Draw two close upright lines. Fly a narrow triangle from the top.', 'Curve one edge as if the wind caught it.',
+      'M118 134 L118 34 L123 34 L123 134 M123 35 Q138 32 164 41 Q143 42 123 52Z'],
+  },
+};
+
+const alternateDrawings = new WeakMap();
+function drawingVersion(lesson, alternate) {
+  const choice = drawingChoices[lesson.id];
+  if (!choice || !alternate) return lesson;
+  if (!alternateDrawings.has(lesson)) {
+    const steps = lesson.steps.slice();
+    steps[choice.step] = choice.alternate;
+    alternateDrawings.set(lesson, { ...lesson, steps });
+  }
+  return alternateDrawings.get(lesson);
+}
+
 // One drawing renderer keeps the lesson, replay and tracing guide aligned.
 const drawExample = (() => {
   const artWidth = 240;
@@ -106,14 +152,96 @@ const drawExample = (() => {
     ['#c18756', 'M191 49 l0 13 m-6-6 l12 0 M42 98 l0 9 m-4-4 l8 0 M200 77 l0 7 m-4-3.5 l8 0'],
     ['#ab8f6f', 'M36 180 q20-5 36-2 M81 183 q34 3 60-1 M163 180 q19 2 37-1 M182 187 l12 0'],
   ].map(([color, data]) => [color, new Path2D(data)]);
-  // Keep the original library illustration while leaving the practice tail clear.
-  const foxFur = new Path2D('M60 39 L66 48 M66 43 L72 51 M157 47 L165 40 M154 53 L164 46 M184 139 L178 149 M190 138 L182 151 M197 134 L187 152 M148 152 L141 162 M154 152 L147 165');
+  // Broad pigment masses and a few darker contact points give each subject
+  // its own silhouette. These finishing marks stay off the teaching canvas.
+  const accents = {
+    'little-fox': [
+      ['#c45c2f', 'M59 68 Q52 46 54 21 Q76 28 88 54 Q110 50 136 55 Q150 31 173 23 Q176 48 160 71 L166 76 Q136 83 111 110 Q84 82 54 74Z'],
+      ['#ab4a2a', 'M134 110 Q152 117 163 134 Q181 131 190 113 Q197 114 210 125 Q198 167 151 175 L121 172 Q129 146 129 132 Q141 128 134 110Z'],
+      ['#d99759', 'M92 111 Q103 116 111 118 Q126 113 134 110 Q135 128 127 139 L122 146 L123 137 Q119 143 113 147 L115 138 Q111 142 107 143 L108 134 L102 138 L102 130 L96 133 Q98 122 92 111Z'],
+      ['#503b3a', 'M60 33 Q75 42 80 54 Q68 53 62 59Z M148 55 Q155 43 168 33 L162 58Z M103 95 Q111 92 118 95 L111 101Z'],
+      ['#fff3d9', 'M189 113 Q198 103 214 98 Q216 111 211 124 Q203 118 198 118 L201 122 Q194 119 189 113Z'],
+      ['#633c2c', 'M75 166 Q80 171 94 168 L93 173 Q76 178 73 170Z M102 169 Q112 173 122 167 L121 172 Q111 176 101 172Z'],
+    ],
+    'moon-moth': [
+      ['#497b70', 'M27 46 Q63 40 108 66 Q81 50 36 51 Q40 73 58 92 Q37 77 27 46Z M213 46 Q177 40 132 66 Q159 50 204 51 Q200 73 182 92 Q203 77 213 46Z'],
+      ['#3d6152', 'M111 82 Q118 88 129 81 Q130 106 120 126 Q110 107 111 82Z'],
+      ['#af8351', 'M76 137 Q95 144 88 174 Q94 171 97 159 Q101 144 99 139Z M164 137 Q145 144 152 174 Q146 171 143 159 Q139 144 141 139Z'],
+    ],
+    'high-top': [
+      ['#726283', 'M164 57 Q171 88 168 129 Q182 128 188 124 Q191 83 175 50Z'],
+      ['#f9eccf', 'M36 132 Q35 109 65 106 Q83 116 82 134Z'],
+      ['#573f66', 'M38 143 Q112 155 188 136 L188 140 Q112 158 38 147Z'],
+    ],
+    'camp-mug': [
+      ['#367a78', 'M169 82 L164 152 Q159 170 80 160 Q148 161 152 142 L159 87Z'],
+      ['#41756c', 'M169 92 C205 82 211 134 165 143 L166 132 C195 125 190 98 168 104Z'],
+      ['#674433', 'M70 70 C72 54 161 54 165 70 Q148 62 117 62 Q91 62 70 73Z'],
+    ],
+    'cloud-ship': [
+      ['#854f35', 'M54 139 Q126 164 187 128 Q178 148 157 160 Q99 178 59 148Z'],
+      ['#b98a46', 'M118 49 Q104 83 118 124 Q89 105 69 117 Q92 98 108 107Z'],
+      ['#c99256', 'M123 63 Q154 79 175 114 Q155 109 139 119 Q157 111 163 109 Q148 84 123 63Z'],
+    ],
+  };
+  const pigment = Object.fromEntries(Object.entries(accents).map(([id, layers]) =>
+    [id, layers.map(([color, path]) => [color, new Path2D(path)])]));
+  const groundMarks = {
+    'little-fox': 'M62 177 Q101 173 160 177 M71 180 Q110 178 143 180 M145 178 q16-2 31-1',
+    'camp-mug': 'M68 164 Q133 171 183 161 M101 170 Q149 172 172 167',
+    'high-top': 'M46 157 Q115 164 182 151 M69 161 Q128 165 162 157',
+  };
+  const surfaceMarks = {
+    'little-fox': 'M82 60 l4-2 M86 62 l5-3 M91 61 l4-2 M136 62 l4 3 M143 64 l3 3 M62 80 l7 2 M69 84 l8 3 M146 91 l7-4 M90 132 l-2 6 M92 137 l-2 5 M150 141 l-6 9 M154 141 l-8 13 M157 143 l-7 12 M159 147 l-5 8 M135 159 l-5 7 M138 158 l-5 8 M141 158 l-5 8 M70 44 l3 5 M72 44 l4 6 M158 46 l4-6 M155 48 l4-6',
+    'moon-moth': 'M33 48 Q55 49 77 59 M207 48 Q185 49 163 59 M66 105 q3 10 11 14 M174 105 q-3 10-11 14',
+    'high-top': 'M174 96 l9-6 M174 101 l10-7 M175 106 l10-7 M175 111 l10-7',
+    'camp-mug': 'M74 96 q0 10 2 16 M78 99 l1 6 M149 151 l-4 7 M153 152 l-4 5',
+    'cloud-ship': 'M74 147 q19 7 38 9 M80 153 q13 5 28 6 M137 152 q8-1 13-4 M158 145 l8-4',
+  };
+  function finishPigment(graphics, lesson, colored, alternate) {
+    const id = lesson.id;
+    if (colored) {
+      graphics.globalAlpha = .84;
+      for (const [color, path] of pigment[id]) {
+        const tone = graphics.createLinearGradient(52, 29, 162, 150);
+        tone.addColorStop(0, color + 'a6');
+        tone.addColorStop(1, color);
+        graphics.fillStyle = tone;
+        graphics.fill(path);
+      }
+      if (id === 'cloud-ship') {
+        graphics.fillStyle = '#b75e44';
+        graphics.fill(prepare(lesson).stages[1][0].path);
+      }
+      if (id === 'high-top' && alternate) {
+        graphics.fillStyle = '#635474';
+        graphics.fill(new Path2D('M86 112 H97 L99 120 H87Z M108 112 H119 L125 120 H112Z M99 120 H112 L117 129 H102Z'));
+      }
+      if (id === 'moon-moth') {
+        graphics.fillStyle = alternate ? '#485745' : '#e0b469';
+        graphics.fill(prepare(lesson).stages[3][alternate ? 1 : 0].path);
+      }
+    } else {
+      graphics.fillStyle = '#4a3e36';
+      for (const [index, [, path]] of pigment[id].entries()) {
+        graphics.globalAlpha = id === 'little-fox' && index === 3 ? .78 : .08 + index * .035;
+        graphics.fill(path);
+      }
+    }
+    graphics.globalAlpha = .43;
+    graphics.lineWidth = 1.1;
+    graphics.strokeStyle = '#726456';
+    if (groundMarks[id]) graphics.stroke(new Path2D(groundMarks[id]));
+    graphics.globalAlpha = .66;
+    graphics.stroke(new Path2D(surfaceMarks[id]));
+    graphics.globalAlpha = 1;
+  }
 
   function measures(data) {
     const path = document.createElementNS(svgNamespace, 'path');
     path.setAttribute('d', data);
     const length = path.getTotalLength();
-    return { length, end: path.getPointAtLength(length) };
+    return { length, end: path.getPointAtLength(length), geometry: path };
   }
 
   function parseStroke(data) {
@@ -132,7 +260,7 @@ const drawExample = (() => {
       }
       const geometry = measures(normalized);
       end = geometry.end;
-      return { path: new Path2D(normalized), length: geometry.length };
+      return { path: new Path2D(normalized), length: geometry.length, geometry: geometry.geometry };
     });
   }
 
@@ -194,6 +322,60 @@ const drawExample = (() => {
     graphics.strokeStyle = '#493a31';
     graphics.lineWidth = 1.45;
     for (const { path } of strokes) graphics.stroke(path);
+  }
+
+  // Build a continuous pressure ribbon once per pen-down mark. Translucent
+  // ribbons darken where separate marks cross. Short, irregular graphite
+  // flecks catch the paper along their edges.
+  function graphiteShape(stroke) {
+    const ribbons = [];
+    const grain = new Path2D();
+    stroke.animation ||= parseStroke(stroke.data);
+    for (const { geometry, length } of stroke.animation) {
+      if (!length) continue;
+      const segments = Math.max(2, Math.ceil(length / 1.1));
+      const left = [], right = [];
+      for (let i = 0; i <= segments; i++) {
+        const distance = i * length / segments;
+        const p = geometry.getPointAtLength(distance);
+        const n = geometry.getPointAtLength(Math.min(length, distance + .4));
+        const prev = geometry.getPointAtLength(Math.max(0, distance - .4));
+        const dx = n.x - prev.x, dy = n.y - prev.y;
+        const norm = Math.hypot(dx, dy) || 1;
+        const taper = Math.min(1, distance / 4, (length - distance) / 5);
+        const pressure = .91 + .34 * Math.sin(distance / 11 + p.y / 14);
+        const radius = pressure * (.22 + .78 * taper);
+        const nx = -dy / norm, ny = dx / norm;
+        left.push([p.x + nx * radius, p.y + ny * radius]);
+        right.push([p.x - nx * radius, p.y - ny * radius]);
+        if (Math.sin(i * 4.23 + p.y) > .22) {
+          grain.moveTo(p.x + nx * (radius + .48), p.y + ny * (radius + .48));
+          grain.lineTo(p.x + nx * (radius + .49) + dx, p.y + ny * (radius + .49) + dy);
+        }
+      }
+      const ribbon = new Path2D();
+      ribbon.moveTo(...left[0]);
+      for (const point of left.slice(1)) ribbon.lineTo(...point);
+      for (const point of right.reverse()) ribbon.lineTo(...point);
+      ribbon.closePath();
+      ribbons.push(ribbon);
+    }
+    return { ribbons, grain };
+  }
+
+  function graphite(graphics, strokes) {
+    graphics.save();
+    graphics.fillStyle = '#342b28';
+    graphics.strokeStyle = '#55493c';
+    graphics.lineWidth = .58;
+    for (const stroke of strokes) {
+      stroke.graphite ||= graphiteShape(stroke);
+      graphics.globalAlpha = .85;
+      for (const ribbon of stroke.graphite.ribbons) graphics.fill(ribbon);
+      graphics.globalAlpha = .48;
+      graphics.stroke(stroke.graphite.grain);
+    }
+    graphics.restore();
   }
 
   function replay(graphics, strokes, progress) {
@@ -302,6 +484,7 @@ const drawExample = (() => {
     const scale = Math.min(width / artWidth, height / artHeight) * (options.scale ?? 1);
     const progress = Math.max(0, Math.min(1, options.progress ?? 1));
     const currentStep = Math.min(stepIndex, lesson.steps.length - 1);
+    lesson = drawingVersion(lesson, options.alternate);
     const { stages, washes: washesForLesson } = prepare(lesson);
 
     graphics.save();
@@ -312,10 +495,16 @@ const drawExample = (() => {
 
     if ((options.decorative || options.hero) && !options.teaching && !options.guide) {
       paint(graphics, { washes: washesForLesson }, options.hero);
-      if (lesson.id === 'little-fox') pencil(graphics, [{ path: foxFur }]);
     }
 
-    for (let index = 0; index <= currentStep; index += 1) {
+    const finishedArt = !options.teaching && !options.guide && currentStep === lesson.steps.length - 1;
+    if (finishedArt && pigment[lesson.id]) {
+      finishPigment(graphics, lesson, options.decorative || options.hero, options.alternate);
+    }
+    const drawingStart = lesson.drawingStart ?? 0;
+    // Observation cues belong to their own demo, outside the accumulated sketch.
+    const firstStep = options.teaching && currentStep < drawingStart ? 0 : drawingStart;
+    for (let index = firstStep; index <= currentStep; index += 1) {
       const strokes = stages[index];
       if (options.guide) {
         const isCurrent = index === currentStep;
@@ -331,9 +520,16 @@ const drawExample = (() => {
         graphics.globalAlpha = isCurrent ? 1 : 0.5;
         graphics.lineWidth = isCurrent ? 2.45 : 1.5;
         replay(graphics, strokes, isCurrent ? progress : 1);
+      } else if (pigment[lesson.id]) {
+        graphite(graphics, strokes);
       } else {
         pencil(graphics, strokes);
       }
+    }
+    if (finishedArt && lesson.id === 'little-fox') {
+      const tail = textures[options.tailTexture] || textures.fluffy;
+      skillStroke(graphics, tail[0], '#7d6451', 1.15, 1);
+      skillStroke(graphics, tail[1], '#534336', 1.8, 1);
     }
     graphics.restore();
   };

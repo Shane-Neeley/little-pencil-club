@@ -26,7 +26,7 @@ python3 prototypes/paper-photo/build_fork.py "$fork_dir"
 python3 -m http.server 8732 --bind 127.0.0.1 --directory "$fork_dir"
 ```
 
-Open `http://127.0.0.1:8732/` and choose **Sketchbook → Keep a paper drawing**. Use **Back to Sketchbook** to return to your lessons. Keep using the same browser address and profile to see a saved crop after reopening.
+Open `http://127.0.0.1:8732/` and choose **Sketchbook → Keep a paper drawing**. After saving your crop, tap **Wiggle** for a brief local tilt. Reduced motion shows a still pose. **Download PNG** keeps the original crop. Use **Back to Sketchbook** to return to your lessons. Keep using the same browser address and profile to see a saved crop after reopening.
 
 The builder leaves `dist/` and its Sites configuration unchanged. Its separate output is a local fork for synthetic testing. A future hosted photo release needs explicit authorization for the target host and package. Verify the actual device checks below and confirm the proposed package keeps the photo local with no upload, analytics, AI, gallery, or backup routes.
 

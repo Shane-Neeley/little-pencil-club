@@ -3,6 +3,7 @@
 Install Python Playwright and run playwright install chromium, or set
 PENCIL_TEST_CHROMIUM_PATH to use an existing Chromium executable.
 For WebKit, run playwright install webkit and set PENCIL_TEST_BROWSER=webkit.
+Set PENCIL_TEST_WEBKIT_PATH to use an existing WebKit executable.
 """
 
 import base64
@@ -35,7 +36,8 @@ class FoxLessonTest(unittest.TestCase):
         playwright = cls.enterClassContext(sync_playwright())
         browser = os.environ.get("PENCIL_TEST_BROWSER", "chromium")
         if browser == "webkit":
-            cls.browser = playwright.webkit.launch()
+            executable = os.environ.get("PENCIL_TEST_WEBKIT_PATH")
+            cls.browser = playwright.webkit.launch(executable_path=executable)
         else:
             executable = os.environ.get("PENCIL_TEST_CHROMIUM_PATH")
             cls.browser = playwright.chromium.launch(executable_path=executable)
@@ -157,6 +159,7 @@ class FoxLessonTest(unittest.TestCase):
             "Only your lesson progress is saved. Your drawing stays on your paper."
         )
         expect(page.get_by_role("button", name="Try Hard")).to_have_count(0)
+        expect(page.get_by_role("button", name="Try on your own")).to_have_count(0)
         page.goto(f"{self.url}/#challenge/little-fox")
         expect(finished).to_be_visible()
         self.assertTrue(page.url.endswith("#done/little-fox"))
@@ -228,6 +231,113 @@ class FoxLessonTest(unittest.TestCase):
                 expect(page.locator("#drawing-mode")).to_have_value("copy")
                 expect(page.get_by_role("button", name="Save drawing as PNG")).to_be_enabled()
                 self.assertIsNone(page.evaluate("localStorage.getItem('little-pencil-club/pencil-basics')"))
+
+    def open_optional_skill(self, page, name, level):
+        page.get_by_role("button", name="Skills", exact=True).click()
+        topics = page.get_by_role("group", name="Lesson topics")
+        expect(topics.get_by_role("button", name="Skills")).to_have_attribute("aria-pressed", "true")
+        page.get_by_role("link", name=f"{name} 2 min {level}", exact=True).click()
+        expect(page.get_by_role("heading", name=name, exact=True)).to_be_visible()
+        expect(page.locator("#drawing-mode")).to_have_value("paper")
+
+    def test_optional_pebble_overlap_and_independent_balloons(self):
+        page = self.page_at()
+        self.open_optional_skill(page, "Behind and in front", "Easy")
+        expect(page.get_by_role("heading", name="Draw a pebble", exact=True)).to_be_visible()
+        expect(page.get_by_role("img", name="One rounded pebble drawn as a closed loop.")).to_be_visible()
+        self.paper_control(page, "Next").tap()
+        expect(page.get_by_role("heading", name="Draw a pebble behind it")).to_be_visible()
+        expect(page.get_by_role("img", name="The back pebble’s line stops", exact=False)).to_be_visible()
+        page.reload()
+        expect(page.get_by_role("heading", name="Draw a pebble behind it")).to_be_visible()
+        self.paper_control(page, "Finish").tap()
+        page.get_by_role("button", name="Try on your own").tap()
+        expect(page.get_by_role("heading", name="Draw overlapping balloons")).to_be_visible()
+        self.assert_model_hidden(page)
+        page.get_by_role("button", name="Skip", exact=True).tap()
+        expect(page.get_by_role("heading", name="You drew it!")).to_be_visible()
+        self.assertEqual(page.evaluate("""() => {
+            const { step, completed } = JSON.parse(localStorage.getItem('little-pencil-club/pebble-overlap'));
+            return [step, Boolean(completed), localStorage.getItem('little-pencil-club/little-fox')];
+        }"""), [1, True, None])
+
+    def assert_model_hidden(self, page):
+        for selector in ["#guide", "#ink", "#drawing-mode"]:
+            expect(page.locator(selector)).to_be_hidden()
+        expect(page.locator(".lesson-reference")).to_have_count(0)
+        expect(page.get_by_role("button", name="Replay", exact=True)).to_have_count(0)
+
+    def test_leaf_observation_and_independent_transfer(self):
+        page = self.page_at()
+        self.open_optional_skill(page, "Look, draw, look again", "Medium")
+        reference = page.get_by_role("img", name="Dark brackets mark the widest", exact=False)
+        cue = page.get_by_role("img", name="Two brackets mark the leaf’s widest span.")
+        expect(page.get_by_role("heading", name="Find the widest spot")).to_be_visible()
+        expect(reference).to_be_visible()
+        expect(cue).to_be_visible()
+        self.paper_control(page, "Next").tap()
+        expect(page.get_by_text("Look back at the leaf before drawing its outside edge.")).to_be_visible()
+        expect(reference).to_be_visible()
+        expect(page.get_by_role("img", name="One continuous line", exact=False)).to_be_visible()
+        page.locator("#drawing-mode").select_option("copy")
+        expect(reference).to_be_visible()
+        expect(page.locator("#ink")).to_be_visible()
+        page.locator("#drawing-mode").select_option("paper")
+        self.paper_control(page, "Next").tap()
+        expect(page.get_by_role("heading", name="Add one detail")).to_be_visible()
+        expect(reference).to_be_visible()
+        self.paper_control(page, "Back").tap()
+        expect(reference).to_be_visible()
+        self.paper_control(page, "Next").tap()
+        self.paper_control(page, "Finish").tap()
+        expect(reference).to_be_hidden()
+        page.get_by_role("button", name="Try on your own").tap()
+        expect(page.get_by_role("heading", name="Sketch a nearby object")).to_be_visible()
+        expect(page.locator(".step-text")).to_have_text("Keep the object in view while you sketch it.")
+        self.assert_model_hidden(page)
+        page.reload()
+        self.assert_model_hidden(page)
+        page.get_by_role("button", name="Done", exact=True).tap()
+        expect(page.get_by_role("heading", name="You drew it!")).to_be_visible()
+
+    def test_leaf_reference_and_demo_fit(self):
+        for width, height in [(320, 568), (375, 550), (390, 664), (568, 320), (820, 1180), (1180, 820)]:
+            with self.subTest(width=width, height=height):
+                page = self.page_at(width, height)
+                self.open_optional_skill(page, "Look, draw, look again", "Medium")
+                self.paper_control(page, "Next").tap()
+                page.evaluate("window.scrollTo(0, 0)")
+                self.assert_no_overflow(page, width)
+                image = page.locator(".lesson-reference img")
+                guide = page.locator("#guide")
+                expect(image).to_be_in_viewport(ratio=.98)
+                expect(guide).to_be_in_viewport(ratio=.98)
+                for label in ["Back", "Replay", "Next"]:
+                    control = self.paper_control(page, label)
+                    expect(control).to_be_in_viewport(ratio=1)
+                reference_box, guide_box = image.bounding_box(), guide.bounding_box()
+                self.assertGreaterEqual(reference_box["height"], 72)
+                self.assertGreaterEqual(guide_box["height"], 72)
+                if width <= 520 and height > 630:
+                    self.assertLessEqual(reference_box["y"] + reference_box["height"], guide_box["y"])
+                else:
+                    self.assertLessEqual(reference_box["x"] + reference_box["width"], guide_box["x"])
+
+    def test_leaf_replay_holds_finished_edge(self):
+        page = self.page_at(1180, 820, touch=False, still=False)
+        self.open_optional_skill(page, "Look, draw, look again", "Medium")
+        self.paper_control(page, "Next").click()
+        reference = page.locator(".lesson-reference img")
+        guide = page.locator("#guide")
+        page.wait_for_function("session.progress === 1")
+        held = guide.evaluate("(canvas) => canvas.toDataURL()")
+        replay = self.paper_control(page, "Replay")
+        replay.press("Enter")
+        page.wait_for_function("session.progress > 0 && session.progress < .5")
+        self.assertNotEqual(held, guide.evaluate("(canvas) => canvas.toDataURL()"))
+        expect(reference).to_be_visible()
+        page.wait_for_function("session.progress === 1")
+        self.assertEqual(held, guide.evaluate("(canvas) => canvas.toDataURL()"))
 
     def test_library_levels_and_legacy_progress(self):
         page = self.page_at(375, 667)
@@ -314,21 +424,38 @@ class FoxLessonTest(unittest.TestCase):
         self.assertEqual(size_and_ink, [1600, 1104, True])
 
     def test_paper_layouts(self):
-        for width, height in [
-            (320, 568), (430, 932), (568, 320), (932, 430),
-            (744, 1133), (1133, 744), (820, 1180), (1180, 820),
-            (1024, 1366), (1366, 1024),
+        for width, height, touch in [
+            (320, 568, True), (375, 550, True), (390, 664, True), (430, 932, True),
+            (568, 320, True), (730, 360, True), (731, 360, True), (812, 375, True),
+            (932, 430, True), (744, 1133, True), (1133, 744, True),
+            (820, 1180, True), (1180, 820, True), (1024, 1366, True), (1366, 1024, True),
+            (1440, 900, False),
         ]:
             with self.subTest(width=width, height=height):
-                page = self.page_at(width, height)
+                page = self.page_at(width, height, touch=touch)
                 self.assert_no_overflow(page, width)
-                self.open_fox(page)
-                self.assert_paper_layout(page, width, height, ["Back", "Replay", "Next"])
-                self.to_tail(page)
+                self.open_fox(page, touch=touch)
+                for _ in range(5):
+                    self.assert_paper_layout(page, width, height, ["Back", "Replay", "Next"])
+                    self.press_paper_control(page, "Next", touch)
+                expect(page.get_by_role("heading", name="Pick a tail pattern")).to_be_visible()
                 self.assert_paper_layout(page, width, height, ["Back", "Replay", "Finish", "Skip"])
-                page.get_by_role("link", name="Lessons", exact=True).tap()
-                self.open_basics(page)
+                self.press_paper_control(page, "Finish", touch)
+                expect(page.get_by_role("heading", name="You drew it!")).to_be_visible()
+                page.get_by_role("link", name="Lessons", exact=True).click()
+                self.open_basics(page, touch=touch)
                 self.assert_paper_layout(page, width, height, ["Back", "Replay", "Finish", "Skip"])
+                self.press_paper_control(page, "Skip", touch)
+                expect(page.get_by_role("heading", name="You drew it!")).to_be_visible()
+
+    def press_paper_control(self, page, name, touch):
+        # Coordinate input exercises the visible hit target without scrolling it into view.
+        button = self.paper_control(page, name).bounding_box()
+        x, y = button["x"] + button["width"] / 2, button["y"] + button["height"] / 2
+        if touch:
+            page.touchscreen.tap(x, y)
+        else:
+            page.mouse.click(x, y)
 
     def assert_no_overflow(self, page, width):
         self.assertLessEqual(page.evaluate("document.documentElement.scrollWidth"), width)
@@ -339,8 +466,71 @@ class FoxLessonTest(unittest.TestCase):
         guide = page.locator("#guide").bounding_box()
         self.assertGreaterEqual(guide["height"], 115)
         for name in controls:
-            button = self.paper_control(page, name).bounding_box()
+            control = self.paper_control(page, name)
+            button = control.bounding_box()
             self.assertGreaterEqual(button["height"], 44)
             self.assertGreaterEqual(button["width"], 44)
             self.assertGreaterEqual(button["y"], guide["y"] + guide["height"] - 1)
             self.assertLessEqual(button["y"] + button["height"], height)
+            if control.is_enabled():
+                self.assertTrue(control.evaluate("""button => {
+                    const bounds = button.getBoundingClientRect();
+                    const hit = document.elementFromPoint(
+                        bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+                    return button.contains(hit);
+                }"""), f"{name} must be hittable without scrolling")
+
+    def test_sketchbook_file_transfer_wiggle_and_png(self):
+        from json import loads
+
+        source = self.page_at()
+        self.open_basics(source)
+        self.paper_control(source, "Finish").tap()
+        source.get_by_role("link", name="Sketchbook", exact=True).first.tap()
+        source.get_by_text("Move lesson progress", exact=True).tap()
+        with source.expect_download() as exported:
+            source.get_by_role("button", name="Save progress file").tap()
+        progress = exported.value.path().read_bytes()
+        self.assertEqual(loads(progress), {
+            "format": "little-pencil-club-progress", "version": 1, "completed": ["pencil-basics"],
+        })
+
+        target = self.page_at(width=320, height=568, still=False)
+        self.open_basics(target)
+        target.locator("#drawing-mode").select_option("copy")
+        ink = target.locator("#ink")
+        ink.scroll_into_view_if_needed()
+        bounds = ink.bounding_box()
+        target.mouse.move(bounds["x"] + 25, bounds["y"] + 25)
+        target.mouse.down()
+        target.mouse.move(bounds["x"] + 68, bounds["y"] + 74, steps=5)
+        target.mouse.up()
+        before = target.evaluate("localStorage.getItem('little-pencil-club/pencil-basics')")
+        self.assertTrue(loads(before)["strokes"])
+        target.get_by_role("navigation").get_by_role("link", name="Sketchbook").tap()
+        target.get_by_text("Move lesson progress", exact=True).tap()
+        picker = target.locator('.progress-files input[type="file"]')
+        picker.set_input_files({"name": "bad.json", "mimeType": "application/json", "buffer": b"{}"})
+        expect(target.locator(".import-status")).to_contain_text("Choose a progress file")
+        file = {"name": "progress.json", "mimeType": "application/json", "buffer": progress}
+        picker.set_input_files(file)
+        expect(target.locator(".import-status")).to_have_text("1 checkmark added.")
+        picker.set_input_files(file)
+        expect(target.locator(".import-status")).to_have_text("0 checkmarks added.")
+        target.reload()
+        expect(target.get_by_text("Finished drawing", exact=True)).to_be_visible()
+        card = target.locator(".ink-card")
+        canvas = card.locator("canvas")
+        png_before = canvas.evaluate("c => c.toDataURL()")
+        wiggle = card.get_by_role("button", name="Wiggle", exact=False)
+        wiggle.tap()
+        self.assertTrue(canvas.evaluate("c => c.getAnimations().length > 0"))
+        target.emulate_media(reduced_motion="reduce")
+        wiggle.tap()
+        expect(canvas).to_have_class("picture-canvas still-tilt")
+        self.assertEqual(canvas.evaluate("c => c.toDataURL()"), png_before)
+        with target.expect_download() as drawing:
+            card.get_by_role("button", name="Save", exact=False).tap()
+        self.assertEqual(drawing.value.suggested_filename, "pencil-basics-sketch.png")
+        self.assertEqual(drawing.value.path().read_bytes()[:8], b"\x89PNG\r\n\x1a\n")
+        self.assertEqual(target.evaluate("localStorage.getItem('little-pencil-club/pencil-basics')"), before)

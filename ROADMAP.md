@@ -9,7 +9,7 @@ Little Pencil Club is a paper-first drawing game for teen and adult beginners (1
 ## Already shipped
 
 - [x] Paper-first Back, Replay, and Next; optional in-lesson trace and blank canvas.
-- [x] 32 original lessons across six topics, with all three numeric difficulty levels represented.
+- [x] 49 original lessons across seven topics, with all three numeric difficulty levels represented.
 - [x] Local Sketchbook, visible completion checkmarks, digital PNG export, and post-lesson remix prompts.
 - [x] Printable Pencil Pal cards.
 
@@ -27,9 +27,9 @@ Little Pencil Club is a paper-first drawing game for teen and adult beginners (1
 
 ### Next, if the first pilot is useful
 
-6. [ ] **[Missing] Save a paper drawing from iPad Safari.** Prototype the browser photo picker and, where supported, camera capture. Show a preview, let the learner crop the paper, and provide retake, cancel, local save, PNG export, and delete. Done when capture and picker fallback are verified on a real iPad and denial or accidental cancellation leaves drawing intact. No network upload.
-7. [ ] **[Missing] Make a paper drawing wiggle.** Take the cropped drawing, preserve the original, and preview an on-device bounce, wiggle, or wobble. Done when the learner can pick a motion, replay it, stop it, and keep the still drawing without any image leaving the device. Evaluate smarter local cutout or motion effects only after the simple version is fun; off-device AI is a separate decision.
-8. [ ] **[Partial] Link lessons by skill, not just subject.** Start with light/dark and looking closely at shapes or textures. For the latter, try an everyday object or leaf: look, draw one part, look again. **Done when:** at least two skills each have a short demo, a guided subject, and another subject that uses the same skill with less help.
+6. [ ] **[Prototype] Save a paper drawing from iPad Safari.** The local [paper-photo preview](prototypes/paper-photo/README.md) supports camera and picker inputs, crop, retake, cancel, local save, PNG export, and delete. Done when capture and picker fallback are verified on a real iPad and denial or accidental cancellation leaves drawing intact. No network upload.
+7. [ ] **[Partial] Make a paper drawing wiggle.** Sketchbook supports opt-in local Wiggle for on-screen drawings. The paper-photo version is in the local preview. Take the cropped drawing, preserve the original, and preview an on-device bounce, wiggle, or wobble. Done when the learner can pick a motion, replay it, stop it, and keep the still drawing without any image leaving the device. Evaluate smarter local cutout or motion effects only after the simple version is fun; off-device AI is a separate decision.
+8. [x] **Link lessons by skill across subjects.** Overlapping pebbles lead to balloons, observing a leaf leads to sketching a nearby object, and the stripe and shadow lessons each offer an unmodeled subject. Each transfer prompt hides the demonstration.
 9. [ ] **[Partial] Try one optional Sketchbook reflection.** Ask the learner to point to or say what they changed, with a skip and no score. **Done when:** the prompt works for paper drawers and does not require typing, an upload, or a network account. Defer studio decoration, currencies, streaks, and automated critiques until there’s a clear reason to build them.
 10. [ ] **[Verify] Do an accessibility and input pass.** Cover large touch targets, non-color level indicators, focus and keyboard navigation, contrast, reduced motion, and pen/finger/mouse options. Done when the first lesson is tested on touch and keyboard and supports Apple Pencil without making it a requirement.
 11. [ ] **[Partial] Make portable paper activities.** Build on the printable Pencil Pal cards with a printable skill mini-lesson or reference sheet. Done when it can be printed in black and white and finished with ordinary pencil and paper, without a connection.
@@ -58,7 +58,7 @@ Little Pencil Club is a paper-first drawing game for teen and adult beginners (1
 28. [ ] **[Partial] Explore more original paths and skill range.** Put cartoon expressions, environments, clothing, short comics, perspective, layering and composition behind demand and the learning-pilot results. Done per path when there is clear scaffolding, independent practice, and original art.
 29. [ ] **[Missing] Explore localization.** Make the first lesson and navigation available in a second language, with independently selectable narration if added. Done when language changes do not reset progress and copy/captions have been checked by a fluent reader.
 30. [ ] **[Missing] Explore separate local sketchbooks for siblings.** Keep names optional and do not collect ages. Done when a caregiver can move between and remove local sketchbooks without mixing work. Cloud accounts or cross-device sync are a separate, deferred decision.
-31. [ ] **[Missing / later] Offer optional D1 backup for lesson completion.** In optional Settings, “Save a backup” writes completed lesson IDs to a distinct D1 store; “Bring back my progress” restores on a second device. No names, email, drawings, class linkage, or account. Verify two browser contexts and secure revocation before rollout. [Issue #7](https://github.com/Shane-Neeley/little-pencil-club/issues/7)
+31. [ ] **[Prototype / later] Offer optional D1 backup for lesson completion.** The released Sketchbook can move checkmarks between devices with a local file. The separate [D1 prototype](https://github.com/Shane-Neeley/little-pencil-club/pull/11) remains under evaluation. The proposed hosted backup would store only completed lesson IDs. No names, email, drawings, class linkage, or account. Verify two browser contexts and secure revocation before rollout. [Issue #7](https://github.com/Shane-Neeley/little-pencil-club/issues/7)
 32. [ ] **[Missing / defer] Explore an on-device drawing replay export.** If drawing-process export proves useful, use locally saved strokes and an explicit export action, not camera or wearable capture. No hosted gallery, recipient comments, or automated capture planned.
 
 ### Not needed for this pilot

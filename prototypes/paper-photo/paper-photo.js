@@ -263,6 +263,24 @@ function discardDraft() {
   updateControls();
 }
 
+async function keepPngPixels(blob) {
+  // Some WebKit versions add an EXIF block even to a freshly drawn canvas.
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  const view = new DataView(bytes.buffer);
+  const kept = [bytes.subarray(0, 8)];
+  const pixelChunks = new Set(["IHDR", "PLTE", "tRNS", "IDAT", "IEND", "sRGB", "gAMA", "cHRM"]);
+  for (let offset = 8; offset < bytes.length;) {
+    const length = view.getUint32(offset);
+    const end = offset + length + 12;
+    if (end > bytes.length) throw new Error("Incomplete encoded PNG.");
+    const type = String.fromCharCode(...bytes.subarray(offset + 4, offset + 8));
+    if (pixelChunks.has(type)) kept.push(bytes.subarray(offset, end));
+    if (type === "IEND") return new Blob(kept, { type: "image/png" });
+    offset = end;
+  }
+  throw new Error("Incomplete encoded PNG.");
+}
+
 async function encodeCrop() {
   const left = Math.min(photo.width - 1, Math.round(crop.left * photo.width));
   const top = Math.min(photo.height - 1, Math.round(crop.top * photo.height));
@@ -282,7 +300,7 @@ async function encodeCrop() {
     [canvas.width, canvas.height] = [outputWidth, outputHeight];
     context.drawImage(photo, left, top, width, height, 0, 0, outputWidth, outputHeight);
     const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
-    if (blob?.type === "image/png" && blob.size <= MAX_SAVED_BYTES) return blob;
+    if (blob?.type === "image/png" && blob.size <= MAX_SAVED_BYTES) return keepPngPixels(blob);
   }
   throw new Error("The cropped image could not be saved within the size limit.");
 }
