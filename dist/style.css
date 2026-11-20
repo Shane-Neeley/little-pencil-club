@@ -165,6 +165,8 @@ h1, h2, h3, p { margin: 0; }
 .level-filters [aria-pressed="true"] .difficulty-pencils .icon { color: #aaa2b1; }
 .level-filters [aria-pressed="true"] .difficulty-pencils .filled .icon { color: var(--yellow); }
 .book-heading { font-size: clamp(2.65rem, 6vw, 4.6rem); margin: 10px 0 15px; }
+.book-paper { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 14px; margin: 0 0 22px; }
+.book-paper p { margin: 0; }
 .book-description { color: var(--muted); line-height: 1.5; margin-bottom: 25px; }
 .empty-book { background: var(--lilac); border-radius: 20px; padding: 42px 26px; text-align: center; }
 .empty-book h2 { font: 800 1.8rem var(--sans); }

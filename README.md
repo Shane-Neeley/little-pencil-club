@@ -29,7 +29,7 @@ for file in dist/*.js; do
 done
 ```
 
-The optional [paper-photo prototype](prototypes/paper-photo/README.md) runs separately on loopback for synthetic testing. It lives outside `dist/` and has no hosting setup.
+For local fork testing, open **Sketchbook → Keep a paper drawing** to try the optional photo editor with synthetic artwork. See the [paper-photo test guide](prototypes/paper-photo/README.md).
 
 ## Teaching references
 

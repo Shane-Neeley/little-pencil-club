@@ -1,16 +1,16 @@
-# Paper photo prototype
+# Sketchbook paper-photo tool
 
-[Issue #10](https://github.com/Shane-Neeley/little-pencil-club/issues/10) explores keeping a paper drawing in the browser after drawing. The prototype runs separately from the game under `prototypes/paper-photo/`, outside `dist/`. Use loopback and synthetic fixtures for fork testing. School hosting and distribution remain on hold.
+[Issue #10](https://github.com/Shane-Neeley/little-pencil-club/issues/10) explores keeping a paper drawing in the browser after drawing. The optional editor opens from Sketchbook. Use loopback and synthetic fixtures for fork testing. School hosting and distribution remain on hold.
 
 ## Run it locally
 
 Start the loopback server from the repository root.
 
 ```sh
-python3 -m http.server 8732 --bind 127.0.0.1 --directory prototypes/paper-photo
+python3 -m http.server 8732 --bind 127.0.0.1 --directory dist
 ```
 
-Open `http://127.0.0.1:8732/` on the same machine. Keep using the same address and browser profile to see the saved copy after reopening. The page uses its three static files from the local server and works without internet access.
+Open `http://127.0.0.1:8732/` on the same machine and choose **Sketchbook → Keep a paper drawing**. For a direct editor check, open `http://127.0.0.1:8732/paper-photo/`. Keep using the same address and browser profile to see the saved copy after reopening. The page uses its three static files from the local server and works without internet access.
 
 - **Take a photo** asks the device’s file input for its rear-facing camera. **Choose a photo** opens the regular picker when Camera is unavailable or declined. Use a locally available synthetic image for testing.
 - Drag the corners to crop. The clear part of the preview shows what will be kept. When a corner has keyboard focus, use the arrow keys or hold Shift for a larger move. Canceling a crop or dismissing a picker leaves the saved drawing in place.
@@ -33,6 +33,6 @@ python3 prototypes/paper-photo/test_paper_photo.py -v
 PAPER_PHOTO_BROWSER=chromium python3 prototypes/paper-photo/test_paper_photo.py -v
 ```
 
-The browser suite uses iPad Pro 11 portrait (834 × 1194) and landscape (1194 × 834) profiles with synthetic PNG and JPEG inputs. It intercepts the file choosers and blocks HTTP requests after the three local assets load. It checks invalid and empty selection, canceled retake, crop pixels, output bounds, metadata removal, local save and replacement, reopening, PNG export, and deletion.
+The browser suite uses iPad Pro 11 portrait (834 × 1194) and landscape (1194 × 834) profiles with synthetic PNG and JPEG inputs. It intercepts file choosers and blocks HTTP requests between local page loads. The Sketchbook round trip also runs in an iPhone-sized viewport and checks that existing lessons and browser-local progress survive opening and closing the editor. It checks invalid and empty selection, canceled retake, crop pixels, output bounds, metadata removal, local save and replacement, reopening, PNG export, and deletion.
 
 For a real iPad check, use a test device and synthetic artwork. Verify the native rear-camera chooser, a declined or canceled capture followed by the regular picker, photo orientation and HEIF decoding, touch cropping in both orientations, and opening the exported PNG in Files. Check that reopening restores the browser copy and deleting it leaves any separately exported file intact.

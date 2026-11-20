@@ -292,6 +292,10 @@ function renderBook() {
   main.innerHTML = `
     <h1 class="book-heading">Your sketchbook</h1>
     <p class="book-description">${completed} of ${lessons.length} lessons finished. Your on-screen drawings stay in this browser.</p>
+    <section class="book-paper" aria-label="Paper photos">
+      <a class="secondary" href="./paper-photo/">Keep a paper drawing</a>
+      <p>Crop and save a photo in this browser.</p>
+    </section>
     ${started.length ? `<div class="card-grid">${started.map(lesson => previewCard(lesson, true)).join('')}</div>` : `
       <section class="empty-book">${icon('book')}<h2>A fresh page</h2>
         <p>Start any lesson. Come back here to see what you’ve tried.</p>
