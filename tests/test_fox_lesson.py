@@ -17,6 +17,11 @@ from pathlib import Path
 from playwright.sync_api import expect, sync_playwright
 
 
+THUMBNAIL_HAS_INK = """canvas => canvas.getContext('2d').getImageData(
+    0, 0, canvas.width, canvas.height
+  ).data.some((value, index) => index % 4 === 3 && value > 0)"""
+
+
 class StaticGameHandler(SimpleHTTPRequestHandler):
     def log_message(self, *args):
         pass
@@ -480,6 +485,43 @@ class FoxLessonTest(unittest.TestCase):
                     return button.contains(hit);
                 }"""), f"{name} must be hittable without scrolling")
 
+    def test_sketchbook_paints_distant_thumbnail_when_scrolled_into_view(self):
+        page = self.page_at(width=390, height=844)
+        last_id = page.evaluate("""() => {
+            for (const lesson of lessons) {
+              localStorage.setItem('little-pencil-club/' + lesson.id, JSON.stringify({
+                strokes: [{ tool: 'pencil', points: [[200, 200, 60], [700, 420, 80]] }]
+              }));
+            }
+            return lessons.at(-1).id;
+        }""")
+        page.get_by_role("navigation").get_by_role("link", name="Sketchbook").tap()
+        page.reload()
+        visible = page.locator('canvas[data-ink]').first
+        distant = page.locator(f'canvas[data-lesson="{last_id}"][data-ink]')
+        page.wait_for_function(THUMBNAIL_HAS_INK, arg=visible.element_handle())
+        self.assertFalse(distant.evaluate(THUMBNAIL_HAS_INK))
+        distant.scroll_into_view_if_needed()
+        page.wait_for_function(THUMBNAIL_HAS_INK, arg=distant.element_handle())
+
+    def test_another_tabs_mode_change_preserves_finished_checkmark(self):
+        first = self.page_at()
+        second = first.context.new_page()
+        self.addCleanup(second.close)
+        second.goto(self.url + "/#draw/pencil-basics")
+        expect(second.get_by_role("heading", name="Try light and dark")).to_be_visible()
+        self.open_basics(first)
+        self.paper_control(first, "Finish").tap()
+        expect(first.get_by_role("heading", name="You drew it!")).to_be_visible()
+
+        second.locator("#drawing-mode").select_option("copy")
+        second.get_by_role("navigation").get_by_role("link", name="Sketchbook").tap()
+        second.reload()
+        expect(second.get_by_role("link", name="Pencil Basics Lesson finished")).to_be_visible()
+        second.get_by_role("link", name="Pencil Basics Lesson finished").tap()
+        expect(second.get_by_role("heading", name="You drew it!")).to_be_visible()
+        expect(second.locator("#drawing-mode")).to_have_value("copy")
+
     def test_sketchbook_file_transfer_wiggle_and_png(self):
         from json import loads
 
@@ -521,6 +563,8 @@ class FoxLessonTest(unittest.TestCase):
         expect(target.get_by_text("Finished drawing", exact=True)).to_be_visible()
         card = target.locator(".ink-card")
         canvas = card.locator("canvas")
+        canvas.scroll_into_view_if_needed()
+        target.wait_for_function(THUMBNAIL_HAS_INK, arg=canvas.element_handle())
         png_before = canvas.evaluate("c => c.toDataURL()")
         wiggle = card.get_by_role("button", name="Wiggle", exact=False)
         wiggle.tap()
@@ -534,3 +578,112 @@ class FoxLessonTest(unittest.TestCase):
         self.assertEqual(drawing.value.suggested_filename, "pencil-basics-sketch.png")
         self.assertEqual(drawing.value.path().read_bytes()[:8], b"\x89PNG\r\n\x1a\n")
         self.assertEqual(target.evaluate("localStorage.getItem('little-pencil-club/pencil-basics')"), before)
+
+    def test_completion_feedback_distinguishes_unsaved_ink(self):
+        page = self.page_at(touch=False)
+        self.open_basics(page, touch=False)
+        page.get_by_label("Drawing mode").select_option("copy")
+        page.evaluate("""() => {
+          const set = Storage.prototype.setItem;
+          Storage.prototype.setItem = function (key, value) {
+            if (key === 'little-pencil-club/pencil-basics')
+              throw new DOMException('Synthetic quota limit', 'QuotaExceededError');
+            return set.call(this, key, value);
+          };
+        }""")
+        ink = page.locator("#ink")
+        ink.scroll_into_view_if_needed()
+        bounds = ink.bounding_box()
+        page.mouse.move(bounds["x"] + 20, bounds["y"] + 20)
+        page.mouse.down()
+        page.mouse.move(bounds["x"] + 65, bounds["y"] + 55, steps=4)
+        page.mouse.up()
+        page.get_by_role("button", name="Finish", exact=True).click()
+        expect(page.locator("#finish-message")).to_contain_text("Save a PNG")
+        reopened = page.context.new_page()
+        reopened.goto(self.url + "/#sketchbook")
+        expect(reopened.get_by_role("link", name="Pencil Basics Lesson finished")).to_be_visible()
+        expect(reopened.get_by_role("button", name="Save your Pencil Basics drawing as a PNG")).to_have_count(0)
+
+    def defer_progress_reads(self, page):
+        from json import dumps
+
+        page.evaluate("""() => {
+            const read = File.prototype.text;
+            window.progressReads = new Map();
+            File.prototype.text = function() {
+                return new Promise(resolve => {
+                    window.progressReads.set(this.name, () => resolve(read.call(this)));
+                });
+            };
+        }""")
+
+        def select(lesson):
+            name = lesson + ".json"
+            content = dumps({
+                "format": "little-pencil-club-progress", "version": 1, "completed": [lesson],
+            }).encode()
+            page.locator('.progress-files input').set_input_files({
+                "name": name, "mimeType": "application/json", "buffer": content,
+            })
+            page.wait_for_function("name => window.progressReads.has(name)", arg=name)
+
+        def finish(lesson):
+            page.evaluate("name => window.progressReads.get(name)()", lesson + ".json")
+            page.wait_for_function(
+                "id => localStorage.getItem('little-pencil-club/finished/' + id) === 'true'", arg=lesson
+            )
+
+        return select, finish
+
+    def test_sketchbook_refreshes_after_progress_reads_finish_out_of_order(self):
+        page = self.page_at(touch=False)
+        page.locator("#nav-sketchbook").click()
+        page.get_by_text("Move lesson progress", exact=True).click()
+        select, finish = self.defer_progress_reads(page)
+        select("little-fox")
+        select("pencil-basics")
+        finish("pencil-basics")
+        expect(page.locator(".book-description")).to_contain_text("1 of 49")
+        expect(page.locator(".import-status")).to_have_text("1 checkmark added.")
+        page.locator(".progress-files summary").focus()
+        finish("little-fox")
+        expect(page.locator(".book-description")).to_contain_text("2 of 49")
+        expect(page.locator(".card-title")).to_have_text(["Little fox", "Pencil Basics"])
+        expect(page.locator(".progress-files summary")).to_be_focused()
+        expect(page.locator(".import-status")).to_have_text("1 checkmark added.")
+
+    def test_progress_read_keeps_navigation_and_refreshes_a_reopened_sketchbook(self):
+        page = self.page_at(width=320, height=568, touch=False)
+        page.evaluate("""() => {
+            const fixtures = lessons.filter(item => !['little-fox', 'pencil-basics'].includes(item.id)).slice(0, 8);
+            for (const lesson of fixtures) localStorage.setItem('little-pencil-club/finished/' + lesson.id, 'true');
+        }""")
+        page.reload()
+        page.locator("#nav-sketchbook").click()
+        page.get_by_text("Move lesson progress", exact=True).click()
+        select, finish = self.defer_progress_reads(page)
+        select("pencil-basics")
+        page.locator("#nav-lessons").click()
+        self.open_fox(page, touch=False)
+        finish("pencil-basics")
+        expect(page.get_by_role("heading", name="Sketch the head")).to_be_visible()
+        expect(page).to_have_url(self.url + "/#draw/little-fox")
+
+        page.locator("#nav-sketchbook").click()
+        expect(page.locator(".book-description")).to_contain_text("9 of 49")
+        page.get_by_text("Move lesson progress", exact=True).click()
+        select("little-fox")
+        page.locator("#nav-lessons").click()
+        page.locator("#nav-sketchbook").click()
+        expect(page.locator(".book-description")).to_contain_text("9 of 49")
+        card = page.locator(".lesson-card").filter(has_text="Pencil Basics")
+        card.focus()
+        page.evaluate("window.scrollTo({top: 130, behavior: 'instant'})")
+        top = page.evaluate("window.scrollY")
+        self.assertGreater(top, 0)
+        finish("little-fox")
+        expect(page.locator(".book-description")).to_contain_text("10 of 49")
+        expect(card).to_be_focused()
+        self.assertEqual(page.evaluate("window.scrollY"), top)
+        self.assertFalse(page.locator(".progress-files").evaluate("element => element.open"))

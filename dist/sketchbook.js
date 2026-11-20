@@ -25,6 +25,23 @@ function progressFileControls(hasProgress) {
   </details>`;
 }
 
+function restoreSketchbookFocus(previous) {
+  if (!previous || previous.isConnected) return;
+  if (previous.matches('.lesson-card')) {
+    const lesson = CSS.escape(previous.querySelector('canvas').dataset.lesson);
+    main.querySelector(`canvas[data-lesson="${lesson}"]`)?.closest('a')?.focus({ preventScroll: true });
+    return;
+  }
+  if (previous.matches('[data-book-wiggle], [data-book-png]')) {
+    const label = CSS.escape(previous.getAttribute('aria-label'));
+    main.querySelector(`button[aria-label="${label}"]`)?.focus({ preventScroll: true });
+    return;
+  }
+  const control = ['.progress-files summary', '[data-import-progress]', '[data-export-progress]', '.empty-book a']
+    .find(selector => previous.matches(selector));
+  if (control) main.querySelector(control)?.focus({ preventScroll: true });
+}
+
 function setupSketchbook() {
   const grid = main.querySelector('.card-grid');
   grid?.addEventListener('click', event => {
@@ -68,9 +85,26 @@ function setupSketchbook() {
         data.completed = 1;
         saved++;
       }
-      if (!panel.isConnected) return;
+      if (location.hash.split('/')[0] !== '#sketchbook') return;
+      const current = main.querySelector('.progress-files');
+      if (!current || (current !== panel && !saved)) return;
+      const isOriginalPanel = current === panel;
+      const lastView = isOriginalPanel ? null : {
+        focus: document.activeElement,
+        open: current.open,
+        status: current.querySelector('.import-status').textContent,
+        top: window.scrollY,
+        left: window.scrollX,
+      };
       render();
       const updated = main.querySelector('.progress-files');
+      if (lastView) {
+        updated.open = lastView.open;
+        updated.querySelector('.import-status').textContent = lastView.status;
+        restoreSketchbookFocus(lastView.focus);
+        window.scrollTo({ top: lastView.top, left: lastView.left, behavior: 'instant' });
+        return;
+      }
       updated.open = true;
       const status = updated.querySelector('.import-status');
       const restored = saved === 1 ? '1 checkmark added.' : `${saved} checkmarks added.`;

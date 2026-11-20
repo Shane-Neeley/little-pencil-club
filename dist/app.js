@@ -311,10 +311,7 @@ function renderBook() {
         <a class="primary" href="#draw/${lessons[0].id}">Draw the little fox</a>
       </section>`}
     ${progressFileControls(completed > 0)}`;
-  main.querySelectorAll('.picture-canvas').forEach(canvas => {
-    paintCard(canvas);
-    observer.observe(canvas);
-  });
+  main.querySelectorAll('.picture-canvas').forEach(canvas => cardVisibility.observe(canvas));
   setupSketchbook();
 }
 
@@ -569,7 +566,7 @@ function playDemo() {
   active.animation = requestAnimationFrame(frame);
 }
 
-function updateTools() {
+function updateTools({ drawingSaved } = {}) {
   const { data, tool, redo } = session;
   const paper = data.drawingMode === 'paper';
   const setPressed = (action, pressed) => main.querySelector(`[data-action="${action}"]`).setAttribute('aria-pressed', String(pressed));
@@ -588,7 +585,7 @@ function updateTools() {
   session.canvas.style.cursor = tool === 'eraser' ? 'cell' : 'crosshair';
   main.querySelector('.board-head').hidden = paper;
   main.querySelector('.board-foot').hidden = paper;
-  if (session.finished) updateFinishMessage();
+  if (session.finished) updateFinishMessage(drawingSaved);
 }
 
 function updatePracticeDescription() {
@@ -599,17 +596,20 @@ function updatePracticeDescription() {
   main.querySelector('.demo')?.setAttribute('aria-label', ['Replay stroke', description].filter(Boolean).join('. '));
 }
 
-function updateFinishMessage() {
+function updateFinishMessage(drawingSaved) {
   const { data, lesson } = session;
-  const savedProgress = data.completed === readStorage(lesson.id, null)?.completed ||
-    Boolean(readStorage('finished/' + lesson.id, false));
+  const saved = readStorage(lesson.id, null);
+  const savedProgress = Boolean(Number(saved?.completed) || readStorage('finished/' + lesson.id, false));
   const message = main.querySelector('#finish-message');
   if (data.drawingMode === 'paper') {
     message.textContent = savedProgress
       ? 'Only your lesson progress is saved. Your drawing stays on your paper.'
       : 'Your drawing stays on your paper. This browser could not save your progress.';
   } else if (data.strokes.some(stroke => stroke.tool === 'pencil')) {
-    message.textContent = savedProgress ? `${lesson.title} is in your sketchbook.` : 'Save a PNG to keep your drawing.';
+    const hasSavedInk = drawingSaved !== false && Array.isArray(saved?.strokes) &&
+      saved.strokes.some(stroke => stroke?.tool === 'pencil');
+    message.textContent = hasSavedInk ? `${lesson.title} is in your sketchbook.`
+      : savedProgress ? 'Your lesson progress is saved. Save a PNG to keep your drawing.' : 'Save a PNG to keep your drawing.';
   } else {
     message.textContent = savedProgress ? 'Your lesson progress is saved.' : 'This browser could not save your progress.';
   }
@@ -660,12 +660,14 @@ function updateStep() {
 function finishLesson() {
   delete session.data.foxActivity;
   session.data.completed = Date.now();
-  persist();
+  // Keep the checkmark when another tab saves an older copy of the drawing.
+  saveStorage('finished/' + session.lesson.id, true);
+  const drawingSaved = persist();
   session.finished = true;
   history.replaceState(null, '', `#done/${session.lesson.id}`);
   cancelAnimationFrame(session.animation);
   renderPanel();
-  updateTools();
+  updateTools({ drawingSaved });
   redrawReferences();
   main.querySelector('.finish-title').focus();
 }

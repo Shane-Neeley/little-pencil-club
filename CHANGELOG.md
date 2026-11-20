@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Sketchbook opens faster when you have lots of drawings. Previews appear as you scroll.
+- Finished checkmarks survive saves from an older tab. Progress imports update the open Sketchbook, and the finish screen tells you when to download a PNG to keep your drawing.
+
 ## Featured sketches and portable progress
 
 - Five featured drawings gain textured graphite, finishing accents and a choice you can make while drawing. Little owl also gains a sleepy expression.
