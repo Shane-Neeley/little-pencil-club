@@ -174,22 +174,43 @@ if (review) {
       'The sample classroom is unavailable.');
   });
 } else {
-  if (!/^[a-f0-9]{64}$/.test(invite)) invite = undefined;
+  const inviteFormat = /^[a-f0-9]{64}$/;
+  if (!inviteFormat.test(invite)) invite = undefined;
   let started = false;
+  let opening = false;
+
   async function openClass() {
-    // Preloaded pages stay inert. Opening a QR in the foreground is the join action.
-    if (started || document.prerendering || document.visibilityState !== 'visible') return;
+    // A visible navigation is the join action. Preloaded pages stay inert.
+    if (opening || (started && !invite) || document.prerendering || document.visibilityState !== 'visible') return;
     started = true;
+    opening = true;
+    message('');
     try {
       const scanned = invite;
       invite = undefined;
-      if (scanned) await call('/join', 'POST', { invite: scanned });
+      if (scanned) {
+        get('member').hidden = true;
+        get('gallery').replaceChildren();
+        await call('/join', 'POST', { invite: scanned });
+      }
       await refreshGallery();
     } catch (error) {
       get('qr-help').hidden = error.status !== 404;
       message(error.status === 404 ? 'Open the private class QR to join.' : 'The sample classroom is unavailable.');
+    } finally {
+      opening = false;
+      if (invite) void openClass();
     }
   }
+
+  // A browser can reuse this document when only an invite fragment changes.
+  addEventListener('hashchange', () => {
+    const scanned = location.hash.slice(1);
+    history.replaceState(null, '', location.pathname);
+    if (!inviteFormat.test(scanned)) return;
+    invite = scanned;
+    void openClass();
+  });
   document.addEventListener('prerenderingchange', openClass);
   document.addEventListener('visibilitychange', openClass);
   openClass();
