@@ -234,8 +234,8 @@ const drawExample = (() => {
     name, [artPath(light), artPath(dark)],
   ]));
 
-  function drawFoxPractice(graphics, width, height, lesson, { foxActivity, progress, startClue, tailTexture }) {
-    const onTail = foxActivity === 'tail';
+  function drawPractice(graphics, width, height, lesson, { activity, progress = 1, startClue, tailTexture }) {
+    const onTail = activity === 'tail';
     const frame = onTail ? { x: 108, y: 81, width: 123, height: 106 } : { x: 0, y: 0, width: 360, height: 144 };
     const scale = Math.min(width / frame.width, height / frame.height);
     graphics.save();
@@ -293,8 +293,8 @@ const drawExample = (() => {
     const graphics = canvas.getContext('2d');
     graphics.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
     graphics.clearRect(0, 0, width, height);
-    if (options.foxActivity) {
-      drawFoxPractice(graphics, width, height, lesson, options);
+    if (options.activity) {
+      drawPractice(graphics, width, height, lesson, options);
       return;
     }
     if (stepIndex < 0) return;
