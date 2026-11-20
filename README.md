@@ -29,6 +29,8 @@ for file in dist/*.js; do
 done
 ```
 
+The optional [paper-photo prototype](prototypes/paper-photo/README.md) runs separately on loopback for synthetic testing. It lives outside `dist/` and has no hosting setup.
+
 ## Teaching references
 
 Simply Draw's starter fish builds from an outline to shading and patterns. ShadowDraw reveals an artist's strokes in sequence. Art for Kids Hub teaches by drawing alongside the learner. Little Pencil Club uses original lessons, silent replays, and optional tips you can open at your own pace. [Simply Draw](https://draw-help.hellosimply.com/en/articles/10258428-how-soon-will-i-get-to-draw-something) · [ShadowDraw](https://www.shadowdrawapp.com/features) · [Art for Kids Hub](https://artforkidshub.com/)
