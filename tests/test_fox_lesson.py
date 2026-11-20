@@ -69,16 +69,24 @@ class FoxLessonTest(unittest.TestCase):
             "button", name=name, exact=True
         )
 
-    def to_marks(self, page, touch=True):
-        next_button = self.paper_control(page, "Next")
-        for _ in range(5):
-            next_button.tap() if touch else next_button.click()
+    def open_basics(self, page, touch=True):
+        entry = page.get_by_role("link", name="Pencil Basics", exact=True)
+        entry.tap() if touch else entry.click()
+        expect(page.get_by_role("heading", name="Pencil Basics")).to_be_visible()
         expect(page.get_by_role("heading", name="Try light and dark")).to_be_visible()
+        expect(page.locator("#drawing-mode")).to_have_value("paper")
+        expect(self.paper_control(page, "Back")).to_be_disabled()
 
-    def test_paper_try_tail_and_optional_challenge(self):
+    def to_tail(self, page):
+        next_button = self.paper_control(page, "Next")
+        for title in ["Give it ears", "Sit the fox down", "Curl the tail", "Add a face", "Pick a tail pattern"]:
+            next_button.tap()
+            expect(page.get_by_role("heading", name=title)).to_be_visible()
+
+    def test_pencil_basics_light_and_dark_and_optional_challenge(self):
         page = self.page_at()
-        self.open_fox(page)
-        self.to_marks(page)
+        self.open_basics(page)
+        expect(page.locator('#drawing-mode option[value="trace"]')).to_have_count(0)
         guide = page.get_by_role("img", name="Two pencil marks", exact=False)
         marks = guide.evaluate("(canvas) => canvas.toDataURL()")
         self.assertEqual(self.mark_shades(guide), [True, True])
@@ -91,27 +99,6 @@ class FoxLessonTest(unittest.TestCase):
         self.assertEqual(with_dots, guide.evaluate("(canvas) => canvas.toDataURL()"))
         dots.tap()
         self.assertEqual(marks, guide.evaluate("(canvas) => canvas.toDataURL()"))
-        self.paper_control(page, "Back").tap()
-        expect(page.get_by_role("heading", name="Add a face")).to_be_visible()
-        self.paper_control(page, "Next").tap()
-        self.paper_control(page, "Skip").tap()
-
-        tail = page.get_by_role("heading", name="Pick a tail pattern")
-        expect(tail).to_be_visible()
-        fluffy = page.locator("#guide").evaluate("(canvas) => canvas.toDataURL()")
-        striped = page.get_by_role("button", name="Striped")
-        striped.tap()
-        expect(striped).to_have_attribute("aria-pressed", "true")
-        self.assertNotEqual(fluffy, page.locator("#guide").evaluate("(canvas) => canvas.toDataURL()"))
-        scorched = page.get_by_role("button", name="Dragon-scorched")
-        scorched.tap()
-        expect(scorched).to_have_attribute("aria-pressed", "true")
-        page.reload()
-        expect(tail).to_be_visible()
-        expect(scorched).to_have_attribute("aria-pressed", "true")
-        self.paper_control(page, "Back").tap()
-        self.paper_control(page, "Next").tap()
-        expect(scorched).to_have_attribute("aria-pressed", "true")
         self.paper_control(page, "Finish").tap()
 
         finished = page.get_by_role("heading", name="You drew it!")
@@ -138,6 +125,41 @@ class FoxLessonTest(unittest.TestCase):
             expect(challenge).to_be_focused()
             if control != "Done":
                 challenge.tap()
+        page.get_by_role("link", name="Sketchbook").first.tap()
+        expect(page.get_by_role("link", name="Pencil Basics Lesson finished")
+               .locator(".completion-mark")).to_be_visible()
+        expect(page.get_by_role("link", name="Little fox Lesson finished")).to_have_count(0)
+
+    def test_fox_goes_straight_to_tail_and_saves_completion(self):
+        page = self.page_at()
+        self.open_fox(page)
+        self.to_tail(page)
+        tail = page.get_by_role("heading", name="Pick a tail pattern")
+        fluffy = page.locator("#guide").evaluate("(canvas) => canvas.toDataURL()")
+        striped = page.get_by_role("button", name="Striped")
+        striped.tap()
+        expect(striped).to_have_attribute("aria-pressed", "true")
+        self.assertNotEqual(fluffy, page.locator("#guide").evaluate("(canvas) => canvas.toDataURL()"))
+        scorched = page.get_by_role("button", name="Dragon-scorched")
+        scorched.tap()
+        expect(scorched).to_have_attribute("aria-pressed", "true")
+        page.reload()
+        expect(tail).to_be_visible()
+        expect(scorched).to_have_attribute("aria-pressed", "true")
+        self.paper_control(page, "Back").tap()
+        expect(page.get_by_role("heading", name="Add a face")).to_be_visible()
+        self.paper_control(page, "Next").tap()
+        expect(scorched).to_have_attribute("aria-pressed", "true")
+        self.paper_control(page, "Finish").tap()
+        finished = page.get_by_role("heading", name="You drew it!")
+        expect(finished).to_be_visible()
+        expect(page.locator("#finish-message")).to_have_text(
+            "Only your lesson progress is saved. Your drawing stays on your paper."
+        )
+        expect(page.get_by_role("button", name="Try Hard")).to_have_count(0)
+        page.goto(f"{self.url}/#challenge/little-fox")
+        expect(finished).to_be_visible()
+        self.assertTrue(page.url.endswith("#done/little-fox"))
         page.get_by_role("link", name="Sketchbook").first.tap()
         book_card = page.get_by_role("link", name="Little fox Lesson finished")
         expect(book_card.locator(".completion-mark")).to_be_visible()
@@ -170,8 +192,7 @@ class FoxLessonTest(unittest.TestCase):
 
     def test_live_marks_hold_and_replay(self):
         page = self.page_at(1180, 820, touch=False, still=False)
-        self.open_fox(page, touch=False)
-        self.to_marks(page, touch=False)
+        self.open_basics(page, touch=False)
         guide = page.locator("#guide")
         page.wait_for_function("session.progress === 1")
         held = guide.evaluate("(canvas) => canvas.toDataURL()")
@@ -188,8 +209,25 @@ class FoxLessonTest(unittest.TestCase):
         )
         expect(page.get_by_role("heading", name="Try light and dark")).to_be_visible()
         self.paper_control(page, "Skip").click()
-        self.paper_control(page, "Skip").click()
         expect(page.get_by_role("heading", name="You drew it!")).to_be_visible()
+
+    def test_resume_fox_when_old_warmup_or_tail_was_saved(self):
+        for activity in ["marks", "tail"]:
+            with self.subTest(activity=activity):
+                page = self.page_at()
+                page.evaluate("""activity => {
+                    localStorage.setItem('little-pencil-club/little-fox', JSON.stringify({
+                        step: 4, completed: 0, drawingMode: 'copy', foxActivity: activity,
+                        tailTexture: 'striped', strokes: [{ tool: 'pencil', points: [[25, 25, 48]] }]
+                    }));
+                }""", activity)
+                page.goto(f"{self.url}/#draw/little-fox")
+                page.reload()
+                expect(page.get_by_role("heading", name="Pick a tail pattern")).to_be_visible()
+                expect(page.get_by_role("button", name="Striped", exact=True)).to_have_attribute("aria-pressed", "true")
+                expect(page.locator("#drawing-mode")).to_have_value("copy")
+                expect(page.get_by_role("button", name="Save drawing as PNG")).to_be_enabled()
+                self.assertIsNone(page.evaluate("localStorage.getItem('little-pencil-club/pencil-basics')"))
 
     def test_library_levels_and_legacy_progress(self):
         page = self.page_at(375, 667)
@@ -248,7 +286,7 @@ class FoxLessonTest(unittest.TestCase):
         page.mouse.up()
         panel = page.get_by_role("region", name="Drawing instructions")
         next_button = panel.get_by_role("button", name="Next", exact=True)
-        for _ in range(6):
+        for _ in range(5):
             next_button.click()
         panel.get_by_role("button", name="Finish", exact=True).click()
         expect(page.locator("#finish-message")).to_have_text("Little fox is in your sketchbook.")
@@ -286,9 +324,10 @@ class FoxLessonTest(unittest.TestCase):
                 self.assert_no_overflow(page, width)
                 self.open_fox(page)
                 self.assert_paper_layout(page, width, height, ["Back", "Replay", "Next"])
-                self.to_marks(page)
-                self.assert_paper_layout(page, width, height, ["Back", "Replay", "Next", "Skip"])
-                self.paper_control(page, "Next").tap()
+                self.to_tail(page)
+                self.assert_paper_layout(page, width, height, ["Back", "Replay", "Finish", "Skip"])
+                page.get_by_role("link", name="Lessons", exact=True).tap()
+                self.open_basics(page)
                 self.assert_paper_layout(page, width, height, ["Back", "Replay", "Finish", "Skip"])
 
     def assert_no_overflow(self, page, width):
