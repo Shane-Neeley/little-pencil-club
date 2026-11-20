@@ -126,6 +126,10 @@ h1, h2, h3, p { margin: 0; }
 .filter:hover:not([aria-pressed="true"]) { border-color: var(--accent, var(--ink)); }
 .filter .icon { width: 17px; height: 17px; color: var(--accent, var(--ink)); }
 .filter[aria-pressed="true"] .icon { color: var(--tint, var(--yellow)); }
+.level-filters { margin-top: -9px; }
+.level-help { color: var(--muted); margin: -8px 0 14px; }
+.level-help:empty { display: none; }
+.no-lessons { grid-column: 1 / -1; }
 .card-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 15px; }
 .lesson-card {
   display: block; min-width: 0; overflow: hidden; border: 1px solid var(--line);
@@ -141,19 +145,23 @@ h1, h2, h3, p { margin: 0; }
 }
 .card-picture canvas { display: block; width: 100%; height: 100%; }
 .completion-mark {
-  position: absolute; right: 10px; top: 10px; color: var(--violet); background: var(--paper);
-  border-radius: 50%; width: 31px; height: 31px; display: grid; place-items: center; box-shadow: 0 1px 4px #0001;
+  position: absolute; right: 9px; top: 9px; color: var(--paper); background: var(--violet);
+  border: 2px solid var(--paper); border-radius: 50%; width: 35px; height: 35px;
+  display: grid; place-items: center; box-shadow: 0 1px 4px #0003;
 }
-.completion-mark .icon { width: 17px; height: 17px; }
+.completion-mark .icon { width: 21px; height: 21px; stroke-width: 2.6; }
 .card-body { min-height: 78px; padding: 12px 14px 13px; }
 .card-title { display: block; font-size: 1.05rem; line-height: 1.3; font-weight: 750; }
 .card-detail {
-  display: flex; align-items: center; justify-content: space-between; gap: 6px;
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; column-gap: 6px;
   margin-top: 5px; color: var(--muted); font-size: .875rem;
 }
-.difficulty { display: inline-flex; gap: 3px; color: #b8aebe; white-space: nowrap; }
-.difficulty .icon { width: 15px; height: 15px; }
-.difficulty .filled { color: var(--accent, var(--violet)); }
+.difficulty { display: inline-flex; gap: 5px; align-items: center; color: var(--ink); font-weight: 750; white-space: nowrap; }
+.difficulty-pencils { display: inline-flex; gap: 2px; align-items: center; }
+.difficulty-pencils .icon { width: 13px; height: 13px; color: #b1a7b5; }
+.difficulty-pencils .filled .icon { color: var(--accent, var(--violet)); }
+.level-filters [aria-pressed="true"] .difficulty-pencils .icon { color: #aaa2b1; }
+.level-filters [aria-pressed="true"] .difficulty-pencils .filled .icon { color: var(--yellow); }
 .book-heading { font-size: clamp(2.65rem, 6vw, 4.6rem); margin: 10px 0 15px; }
 .book-description { color: var(--muted); line-height: 1.5; margin-bottom: 25px; }
 .empty-book { background: var(--lilac); border-radius: 20px; padding: 42px 26px; text-align: center; }
@@ -203,8 +211,10 @@ h1, h2, h3, p { margin: 0; }
 .is-paper .surface { background-image: none; }
 .surface canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 #ink { touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; cursor: crosshair; }
-.paper-actions { display: flex; align-items: stretch; justify-content: flex-end; gap: 8px; padding: 0 14px 14px; }
+.paper-actions { display: flex; flex-wrap: wrap; align-items: stretch; justify-content: flex-end; gap: 8px; padding: 0 14px 14px; }
+.paper-actions button { min-width: 44px; }
 .paper-actions .primary { min-width: 112px; }
+.paper-actions .icon { width: 18px; height: 18px; }
 .board-replay { background: var(--lilac); border-color: #d6c5ec; }
 .board-replay:hover { background: #e4d3fb; }
 .board-replay .icon { width: 18px; height: 18px; color: var(--violet); }
@@ -244,7 +254,14 @@ h1, h2, h3, p { margin: 0; }
 .hint[open] { padding: 0 11px; background: #f5eff8; }
 .hint summary { cursor: pointer; font-weight: 700; font-size: .9rem; min-height: 44px; display: list-item; align-content: center; }
 .hint p { font-size: .94rem; line-height: 1.45; padding-bottom: 10px; }
-.step-actions { display: flex; justify-content: space-between; gap: 7px; margin-top: 13px; }
+.practice-options { display: flex; margin-top: 10px; align-self: start; }
+.practice-options button[aria-pressed="true"] {
+  background: var(--lilac); border-color: var(--violet); box-shadow: inset 0 0 0 1px var(--violet);
+}
+.textures { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.texture { flex-direction: column; gap: 3px; padding: 6px 3px; font-size: .82rem; line-height: 1.1; white-space: normal; }
+.texture .icon { color: var(--violet); }
+.step-actions { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 7px; margin-top: 13px; }
 .step-actions .primary { flex: 1; min-height: 52px; }
 .is-paper .step-tabs, .is-paper .step-actions { display: none; }
 .finish-sheet { padding: 25px; text-align: center; }
@@ -252,6 +269,25 @@ h1, h2, h3, p { margin: 0; }
 .finish-icon { color: var(--violet); }
 .finish-icon .icon { width: 38px; height: 38px; }
 .finish-sheet > p { color: var(--muted); line-height: 1.5; }
+.challenge-invite { margin: 16px 0; padding: 12px; background: #f7efff; border: 1px solid #e3d6ee; border-radius: 12px; }
+.challenge-invite p { margin-top: 6px; line-height: 1.35; }
+.is-transfer .studio-grid { grid-template-columns: 1fr; }
+.is-transfer .lesson-panel:not(.finish-sheet) {
+  display: block; width: min(100%, 590px); margin-inline: auto; text-align: center;
+  padding: clamp(16px, 4vw, 34px);
+}
+.is-transfer .step-heading { font-size: clamp(1.75rem, 5vw, 2.55rem); }
+.is-transfer .hint { width: fit-content; margin-inline: auto; }
+.transfer-paper {
+  display: grid; place-items: center; position: relative; width: 94px; height: 84px; margin: 15px auto;
+  background: var(--lilac); color: var(--violet); border-radius: 12px; transform: rotate(-6deg);
+}
+.transfer-paper .icon { width: 61px; height: 61px; }
+.transfer-paper .icon + .icon {
+  width: 39px; height: 39px; position: absolute; right: -5px; bottom: 0;
+  fill: var(--yellow); stroke: var(--ink);
+}
+.transfer-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 7px; margin-top: 12px; }
 .coach-box {
   margin: 16px 0; text-align: left; padding: 13px; background: var(--lilac); border-radius: 11px;
 }
@@ -300,7 +336,7 @@ h1, h2, h3, p { margin: 0; }
   .demo { grid-area: demo; align-self: center; }
   .step-heading { grid-area: heading; align-self: end; margin: 0 0 5px; font-size: 1.35rem; }
   .step-text { grid-area: instruction; font-size: 1.04rem; }
-  .hint { grid-area: tip; margin-top: 6px; }
+  .hint, .practice-options { grid-area: tip; margin-top: 6px; }
   .step-actions { grid-area: actions; margin-top: 8px; }
 }
 @media (min-width: 731px) and (max-width: 1050px) and (orientation: portrait) {
@@ -319,7 +355,7 @@ h1, h2, h3, p { margin: 0; }
   .studio { padding-top: 13px; }
   .studio .lesson-heading { margin-bottom: 11px; }
   .surface { width: min(100%, max(340px, calc((100dvh - 282px) * 1.4493))); margin-inline: auto; }
-  .is-paper .surface { width: min(100%, max(340px, calc((100dvh - 175px) * 1.4493))); }
+  .is-paper .surface { width: min(100%, max(320px, calc((100dvh - 200px) * 1.4493))); }
 }
 @media (max-width: 480px) {
   .brand { font-size: 17px; gap: 7px; }
@@ -346,8 +382,39 @@ h1, h2, h3, p { margin: 0; }
   .filter { gap: 4px; padding-inline: 9px; font-size: .85rem; }
   .tool-text.optional { display: none; }
   .paper-actions { gap: 6px; padding: 0 9px 9px; }
-  .paper-actions button { padding-inline: 10px; }
-  .paper-actions .primary { min-width: 0; flex: 1; }
+  .paper-actions button { padding-inline: 6px; gap: 4px; font-size: .87rem; }
+  .paper-actions .icon { width: 16px; height: 16px; }
+  .paper-actions .primary { min-width: 44px; flex: 1; }
+}
+@media (max-width: 360px) {
+  .header-inner { padding-inline: 10px; gap: 5px; }
+  .brand { font-size: 15px; gap: 5px; }
+  .brand-mark { width: 28px; height: 28px; }
+  .site-nav a { padding-inline: 6px; font-size: .78rem; }
+  .studio .lesson-heading h1 { font-size: 1.6rem; }
+  .studio .mode-control select { max-width: 150px; text-overflow: ellipsis; }
+  .is-paper .lesson-panel:not(.finish-sheet) { padding: 10px; }
+  .is-paper .step-progress { margin-bottom: 5px; }
+  .is-paper .step-heading { font-size: 1.2rem; }
+  .is-paper .step-text { font-size: 1rem; line-height: 1.3; }
+  .is-paper .surface { width: min(100%, max(185px, calc((100dvh - 410px) * 1.4493))); margin-inline: auto; }
+  .paper-actions { display: grid; grid-template-columns: auto auto minmax(44px, 1fr) auto; }
+  .paper-actions button { padding-inline: 4px; font-size: .81rem; }
+}
+@media (min-width: 520px) and (max-width: 730px) and (orientation: landscape) {
+  body:has(.studio) .header-inner { min-height: 44px; }
+  .studio { padding-top: 8px; }
+  .studio .lesson-heading { margin-bottom: 8px; }
+  .studio-grid.is-paper { grid-template-columns: minmax(0, 1fr) minmax(190px, .67fr); }
+  .is-paper .board { grid-column: 1; grid-row: 1; }
+  .is-paper .lesson-panel { grid-column: 2; grid-row: 1; }
+  .is-paper .step-progress { margin-bottom: 7px; }
+  .is-paper .textures .texture { font-size: .75rem; overflow-wrap: anywhere; }
+  .is-paper .surface { width: min(100%, max(185px, calc((100dvh - 200px) * 1.4493))); margin-inline: auto; }
+  .paper-actions { padding: 0 7px 7px; gap: 4px; }
+  .paper-actions button { padding-inline: 5px; gap: 4px; font-size: .8rem; }
+  .paper-actions .primary { min-width: 44px; flex: 1; }
+  .paper-actions .icon { width: 15px; height: 15px; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; }

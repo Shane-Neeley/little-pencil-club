@@ -11,6 +11,24 @@ const categories = {
   Fantasy: { tint: '#CBF0EA', accent: '#1A6E68', glyph: 'sparkle' },
 };
 
+const foxTailTextures = {
+  fluffy: {
+    label: 'Fluffy',
+    light: 'M187 130 Q184 138 179 142 M188 139 Q184 148 177 152 M179 149 Q173 158 167 161',
+    dark: 'M199 132 Q196 146 187 152 M188 151 Q183 161 174 165',
+  },
+  striped: {
+    label: 'Striped',
+    light: 'M189 124 Q193 126 201 128 M180 137 Q185 140 195 143 M166 149 Q172 153 185 156',
+    dark: 'M188 128 Q192 131 200 132 M178 141 Q184 144 192 147 M164 152 Q170 158 180 160',
+  },
+  scorched: {
+    label: 'Dragon-scorched',
+    light: 'M191 129 L194 133 M186 137 L188 140 M176 151 L179 153 M169 155 L167 160',
+    dark: 'M198 134 L192 142 L196 143 L185 151 M178 146 L174 149 L176 151 L169 155',
+  },
+};
+
 const lessons = [
   {
     id: 'little-fox', title: 'Little fox', category: 'Animals', minutes: 7, level: 1, skill: 'Curves & texture',
@@ -19,7 +37,7 @@ const lessons = [
       ['Give it ears', 'Add two pointy ears with smaller lines inside.', 'Add a tall triangle at each corner of the head. Draw a smaller shape inside each ear.', 'Round the tips just a little.', 'M59 68 Q52 47 54 21 Q78 28 88 54', 'M136 55 Q151 31 173 23 Q175 52 160 70', 'M61 35 Q73 42 79 54 M149 54 Q155 43 167 34'],
       ['Sit the fox down', 'Draw the fox’s body and two little paws.', 'Curve from under the chin down to two little paws. Then draw a round haunch on the right.', 'Leave a small gap between the front paws.', 'M92 111 C81 128 78 144 77 158 Q68 163 73 171 Q82 176 94 172 Q99 163 99 148 M101 172 Q114 176 121 172 Q126 166 121 161 Q126 144 129 134', 'M134 110 C151 115 169 131 168 151 Q167 173 142 175 L121 172'],
       ['Curl the tail', 'Sweep a big, curled tail around the fox.', 'Sweep a big curve from the fox’s back toward the right. Bend it around and bring it back under the body.', 'Try the long curve in one loose movement.', 'M163 134 C182 130 184 103 214 98 C218 133 200 170 151 175', 'M190 113 Q202 117 210 125'],
-      ['Add a face and fur', 'Add sleepy eyes, a little nose, and short fur marks.', 'Add two sleepy eyes, a small nose and cheek curves. Shade the ears and tail with short, slanted lines.', 'Leave the cheeks and tail tip light to make them stand out.', 'M78 79 Q84 73 91 81 M128 81 Q136 73 144 79', 'M103 95 Q110 92 118 95 L111 101Z M111 101 L111 105 Q107 109 102 106 M111 105 Q115 109 120 106', 'M58 79 Q85 84 108 115 M164 81 Q139 85 114 115', 'M60 39 L66 48 M66 43 L72 51 M157 47 L165 40 M154 53 L164 46 M184 139 L178 149 M190 138 L182 151 M197 134 L187 152 M148 152 L141 162 M154 152 L147 165'],
+      ['Add a face', 'Add sleepy eyes and a little nose.', 'Add two sleepy eyes, a small nose and cheek curves.', 'Try small arches for the eyes.', 'M78 79 Q84 73 91 81 M128 81 Q136 73 144 79', 'M103 95 Q110 92 118 95 L111 101Z M111 101 L111 105 Q107 109 102 106 M111 105 Q115 109 120 106', 'M58 79 Q85 84 108 115 M164 81 Q139 85 114 115'],
     ],
   },
   {
