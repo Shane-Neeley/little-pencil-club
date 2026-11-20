@@ -81,7 +81,13 @@ def camera_fixture(page):
         ctx.fillRect(48, 60, 90, 120);
         return canvas.toDataURL('image/jpeg').split(',')[1];
     }""")
-    return b64decode(data)
+    jpeg = b64decode(data)
+    assert jpeg.startswith(b"\xff\xd8")
+    description = SOURCE_TAG + b"\0"
+    tiff = struct.pack("<2sHIH", b"II", 42, 8, 1)
+    tiff += struct.pack("<HHIII", 0x010E, 2, len(description), 26, 0)
+    exif = b"Exif\0\0" + tiff + description
+    return jpeg[:2] + b"\xff\xe1" + struct.pack(">H", len(exif) + 2) + exif + jpeg[2:]
 
 
 def stored_state(page):
@@ -118,7 +124,13 @@ class PaperPhotoTests(unittest.TestCase):
         cls.addClassCleanup(cls.playwright.stop)
         cls.addClassCleanup(cls.server.server_close)
         cls.addClassCleanup(cls.server.shutdown)
-        cls.browser = cls.playwright.webkit.launch(executable_path=os.environ.get("PAPER_PHOTO_WEBKIT"))
+        engine = os.environ.get("PAPER_PHOTO_BROWSER", "webkit")
+        browser_type = {"webkit": cls.playwright.webkit, "chromium": cls.playwright.chromium}[engine]
+        executable = os.environ.get("PAPER_PHOTO_BROWSER_EXECUTABLE")
+        if not executable and engine == "webkit":
+            executable = os.environ.get("PAPER_PHOTO_WEBKIT")
+        cls.browser = browser_type.launch(executable_path=executable)
+        print(f"{engine} {cls.browser.version}", flush=True)
         cls.addClassCleanup(cls.browser.close)
 
     @contextmanager
@@ -271,6 +283,7 @@ class PaperPhotoTests(unittest.TestCase):
                 page.get_by_role("button", name="Delete drawing", exact=True).tap()
                 expect(saved).to_be_hidden()
                 self.assertEqual(stored_state(page), [])
+                self.assertEqual(download.path().read_bytes(), encoded)
                 load_page()
                 expect(saved).to_be_hidden()
 
@@ -305,12 +318,18 @@ class PaperPhotoTests(unittest.TestCase):
                 page.get_by_role("link", name="Download PNG").tap()
             self.assertLess(max(png_dimensions(export.value.path().read_bytes())), 1600)
 
-            choose_photo(page, "Choose a photo", drawing())
+            jpeg = camera_fixture(page)
+            self.assertIn(SOURCE_TAG, jpeg)
+            choose_photo(page, "Take a photo", jpeg, media_type="image/jpeg")
             page.get_by_role("button", name="Replace saved copy").tap()
             expect(status).to_have_text("Drawing saved here.")
-            replaced = stored_state(page)
-            self.assertEqual(len(replaced), 1)
-            self.assertNotEqual(replaced[0][1], records[0][1])
+            with page.expect_download() as export:
+                page.get_by_role("link", name="Download PNG").tap()
+            encoded = export.value.path().read_bytes()
+            self.assertEqual(png_dimensions(encoded), (180, 240))
+            self.assertNotIn(SOURCE_TAG, encoded)
+            self.assertNotIn(b"eXIf", encoded)
+            self.assertEqual(stored_state(page), [[True, len(encoded)]])
 
 
 if __name__ == "__main__":

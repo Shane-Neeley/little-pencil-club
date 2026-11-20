@@ -45,9 +45,9 @@ const difficulties = [
   { label: 'Medium', help: 'Put two moves together and make it your own.' },
   { label: 'Hard', help: 'Try a drawing with fewer clues.' },
 ];
-const foxActivities = {
-  marks: { level: 1, title: 'Try light and dark', instruction: 'On scrap paper, press softly for one line, then harder for the next.' },
-  tail: { level: 2, title: 'Pick a tail pattern', instruction: 'Use light and dark marks on your fox’s tail.' },
+const practiceActivities = {
+  marks: { level: 1 },
+  tail: { level: 2, title: 'Pick a tail pattern', instruction: 'Draw that pattern on your fox’s tail.' },
 };
 const width = 1000;
 const height = 690;
@@ -78,6 +78,14 @@ function saveStorage(key, value) {
   }
 }
 
+function drawingModesFor(lesson) {
+  return lesson.id === 'pencil-basics' ? drawingModes.filter(([id]) => id !== 'trace') : drawingModes;
+}
+
+function activityFor(lesson, data) {
+  return lesson.id === 'pencil-basics' ? 'marks' : data.foxActivity;
+}
+
 function dataFor(lesson) {
   if (!drawings.has(lesson.id)) {
     const saved = readStorage(lesson.id, {});
@@ -90,11 +98,11 @@ function dataFor(lesson) {
       step,
       strokes,
       completed: Number(saved?.completed) || 0,
-      drawingMode: drawingModes.some(([id]) => id === mode) ? mode : 'paper',
+      drawingMode: drawingModesFor(lesson).some(([id]) => id === mode) ? mode : 'paper',
     };
     if (lesson.id === 'little-fox') {
-      if (step === lesson.steps.length - 1 && Object.hasOwn(foxActivities, saved?.foxActivity)) {
-        data.foxActivity = saved.foxActivity;
+      if (step === lesson.steps.length - 1 && ['marks', 'tail'].includes(saved?.foxActivity)) {
+        data.foxActivity = 'tail';
       }
       data.tailTexture = Object.hasOwn(foxTailTextures, saved?.tailTexture) ? saved.tailTexture : 'fluffy';
     }
@@ -134,9 +142,13 @@ function render() {
     });
   });
 
-  const [page, id] = location.hash.slice(1).split('/');
+  let [page, id] = location.hash.slice(1).split('/');
   const lesson = lessonById.get(id);
-  const challenge = page === 'challenge' && id === 'little-fox' && Boolean(dataFor(lesson).completed);
+  if (page === 'challenge' && id === 'little-fox') {
+    page = dataFor(lesson).completed ? 'done' : 'draw';
+    history.replaceState(null, '', `#${page}/${id}`);
+  }
+  const challenge = page === 'challenge' && id === 'pencil-basics' && Boolean(dataFor(lesson).completed);
   const studio = lesson && (page === 'draw' || page === 'done' || challenge);
   const book = page === 'sketchbook';
   document.querySelector('#nav-lessons').toggleAttribute('aria-current', !book);
@@ -167,6 +179,7 @@ function paintCard(canvas) {
   } else {
     drawExample(canvas, lesson, undefined, {
       decorative: true,
+      activity: lesson.id === 'pencil-basics' ? 'marks' : undefined,
       hero: canvas.dataset.hero === 'true',
       scale: canvas.dataset.hero === 'true' ? 1.06 : 1,
     });
@@ -212,7 +225,10 @@ function renderLibrary() {
       <div class="hero-copy">
         <h1 id="home-title">Grab your <em>paper!</em></h1>
         <p>Pick up a real pencil. Let’s draw!</p>
-        <a class="primary" href="#draw/${fox.id}">${icon('pencil')} ${dataFor(fox).step && !dataFor(fox).completed ? 'Continue little fox' : 'Draw the little fox'}</a>
+        <div class="hero-actions">
+          <a class="primary" href="#draw/${fox.id}">${icon('pencil')} ${dataFor(fox).step && !dataFor(fox).completed ? 'Continue little fox' : 'Draw the little fox'}</a>
+          <a class="quiet" href="#draw/pencil-basics">Pencil Basics</a>
+        </div>
       </div>
       <div class="hero-art">
         <figure class="hero-sheet">
@@ -299,7 +315,7 @@ function renderStudio(lesson, finished, challenge) {
       <div class="mode-control">
         <label class="sr-only" for="drawing-mode">Drawing mode</label>
         <select id="drawing-mode">
-          ${drawingModes.map(([mode, label]) => `<option value="${mode}" ${mode === data.drawingMode ? 'selected' : ''}>${label}</option>`).join('')}
+          ${drawingModesFor(lesson).map(([mode, label]) => `<option value="${mode}" ${mode === data.drawingMode ? 'selected' : ''}>${label}</option>`).join('')}
         </select>
       </div>
     </div>
@@ -406,21 +422,22 @@ function renderPanel() {
     return;
   }
   if (finished) {
-    const next = lessons[(lessons.indexOf(lesson) + 1) % lessons.length];
+    const following = lessons[lessons.indexOf(lesson) + 1];
+    const next = following && following.id !== 'pencil-basics' ? following : lessons[0];
     panel.innerHTML = `
       <div class="finish-icon">${icon('sparkle')}</div>
       <h2 class="finish-title" tabindex="-1">You drew it!</h2>
       <p id="finish-message"></p>
-      ${lesson.id === 'little-fox' ? `
+      ${lesson.id === 'pencil-basics' ? `
         <div class="challenge-invite">
           <button class="secondary" type="button" data-action="challenge">${icon('sparkle')} Try Hard</button>
           <p>Use light and dark on a new drawing, with no example.</p>
         </div>` : ''}
-      <div class="coach-box">
+      ${coachLessonIdeas[lesson.id] ? `<div class="coach-box">
         <strong>Give it a twist</strong>
         <p id="remix" aria-live="polite">${coachLessonIdeas[lesson.id]}</p>
         <button class="quiet" data-action="remix">${icon('sparkle')} Another idea</button>
-      </div>
+      </div>` : ''}
       <div class="finish-actions">
         <a class="primary" href="#draw/${next.id}">Draw ${next.title.toLowerCase()}</a>
         <button class="secondary" data-action="keep-drawing">Keep drawing</button>
@@ -428,7 +445,7 @@ function renderPanel() {
       </div>`;
     return;
   }
-  const activity = foxActivities[data.foxActivity];
+  const activity = practiceActivities[activityFor(lesson, data)];
   const [stepTitle, stepInstruction, guidance, hint] = lesson.steps[data.step];
   const { title = stepTitle, instruction = stepInstruction } = activity ?? {};
   panel.innerHTML = `
@@ -466,17 +483,18 @@ function renderPracticeOptions(data) {
   </div>`;
 }
 
-function practiceDescription(data) {
-  if (data.foxActivity === 'marks') return 'Two pencil marks. A thin, light line on the left. A thick, dark line on the right.';
-  if (data.foxActivity === 'tail') return `Fox tail with light and dark marks. ${foxTailTextures[data.tailTexture].label} pattern.`;
+function practiceDescription(lesson, data) {
+  const activity = activityFor(lesson, data);
+  if (activity === 'marks') return 'Two pencil marks. A thin, light line on the left. A thick, dark line on the right.';
+  if (activity === 'tail') return `Fox tail with ${foxTailTextures[data.tailTexture].label.toLowerCase()} pattern.`;
   return '';
 }
 
 function redrawDemo() {
   if (!session || session.challenge) return;
   const { data, lesson, finished, guide, progress, startClue } = session;
-  const foxActivity = finished ? undefined : data.foxActivity;
-  const options = { progress, foxActivity, startClue, tailTexture: data.tailTexture };
+  const activity = finished && lesson.id !== 'pencil-basics' ? undefined : activityFor(lesson, data);
+  const options = { progress: finished ? 1 : progress, activity, startClue, tailTexture: data.tailTexture };
   if (data.drawingMode === 'paper') {
     const step = finished ? lesson.steps.length - 1 : data.step;
     drawExample(guide, lesson, step, { ...options, teaching: !finished, scale: 1.1 });
@@ -503,7 +521,8 @@ function playDemo() {
     return;
   }
   const active = session;
-  const duration = active.data.foxActivity === 'marks' ? 1700 : active.data.foxActivity === 'tail' ? 1400 : 980;
+  const activity = activityFor(active.lesson, active.data);
+  const duration = activity === 'marks' ? 3400 : activity === 'tail' ? 2800 : 1960;
   const start = performance.now();
   function frame(now) {
     if (session !== active || active.finished) return;
@@ -539,8 +558,8 @@ function updateTools() {
 }
 
 function updatePracticeDescription() {
-  const { data, finished, guide } = session;
-  const description = finished ? '' : practiceDescription(data);
+  const { lesson, data, finished, guide } = session;
+  const description = finished ? '' : practiceDescription(lesson, data);
   guide.setAttribute('aria-hidden', String(data.drawingMode !== 'paper' || !description));
   guide.setAttribute('aria-label', description);
   main.querySelector('.demo')?.setAttribute('aria-label', ['Replay stroke', description].filter(Boolean).join('. '));
@@ -572,8 +591,9 @@ function updatePaperControls() {
   controls.hidden = data.drawingMode !== 'paper' || finished;
   if (controls.hidden) return;
   const stepNumber = data.step + 1;
-  const activity = foxActivities[data.foxActivity];
-  const description = activity?.title ?? `Step ${stepNumber} of ${lesson.steps.length}. ${lesson.steps[data.step][0]}`;
+  const activity = practiceActivities[activityFor(lesson, data)];
+  const title = activity?.title ?? lesson.steps[data.step][0];
+  const description = activity ? title : `Step ${stepNumber} of ${lesson.steps.length}. ${title}`;
   const status = controls.querySelector('[role="status"]');
   if (status.textContent !== description) status.textContent = description;
   controls.querySelector('[data-action="back"]').disabled = data.step === 0;
@@ -589,7 +609,6 @@ function setStep(index) {
 
 function setFoxActivity(activity) {
   session.data.foxActivity = activity;
-  session.startClue = false;
   updateStep();
 }
 
@@ -624,17 +643,15 @@ function showChallenge(open) {
 
 function backStep() {
   if (session.challenge) showChallenge(false);
-  else if (session.data.foxActivity === 'tail') setFoxActivity('marks');
-  else if (session.data.foxActivity === 'marks') setFoxActivity(undefined);
+  else if (session.data.foxActivity === 'tail') setFoxActivity(undefined);
   else setStep(session.data.step - 1);
 }
 
 function nextStep() {
   const { data, lesson, challenge } = session;
   if (challenge) showChallenge(false);
-  else if (data.foxActivity === 'marks') setFoxActivity('tail');
   else if (data.step < lesson.steps.length - 1) setStep(data.step + 1);
-  else if (lesson.id === 'little-fox' && !data.foxActivity) setFoxActivity('marks');
+  else if (lesson.id === 'little-fox' && !data.foxActivity) setFoxActivity('tail');
   else finishLesson();
 }
 

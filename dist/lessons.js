@@ -9,6 +9,7 @@ const categories = {
   Nature: { tint: '#DCF1C8', accent: '#356831', glyph: 'leaf' },
   Things: { tint: '#D5EAFF', accent: '#275D9E', glyph: 'box' },
   Fantasy: { tint: '#CBF0EA', accent: '#1A6E68', glyph: 'sparkle' },
+  Skills: { tint: '#F8ECC5', accent: '#79501B', glyph: 'pencil' },
 };
 
 const foxTailTextures = {
@@ -348,6 +349,12 @@ const lessons = [
       ['Draw the wings', 'Draw one curved wing on each side.', 'Curve one wing in from each side. Tuck the ends back against the belly.', 'Turn the tips of both wings toward the middle.', 'M69 100 Q91 107 95 148 Q77 143 73 124 M170 100 Q148 107 144 148 Q162 143 166 124'],
       ['Find a perch', 'Add a perch and little toes to hold it.', 'Draw a branch below the owl. Add two pairs of curved toes gripping it.', 'Leave small gaps in the branch line where the toes overlap.', 'M47 175 Q75 173 100 172 M113 172 Q121 171 127 171 M141 170 L192 165 Q194 170 190 174 Q115 188 49 183Z M102 163 Q99 168 100 176 Q103 181 106 175 L107 166 M109 165 Q107 171 108 176 Q111 180 114 174 L115 166 M129 165 Q126 170 127 175 Q130 179 133 174 L134 164 M136 164 Q134 170 135 175 Q138 179 141 173 L142 163'],
       ['Finish the feathers', 'Darken the pupils and draw little U shapes for feathers.', 'Fill in two dark pupils, leaving small highlights. Put short U shapes down the belly.', 'Stagger the U shapes like roof tiles.', 'M97 72 a8 9 0 1 0 0.1 0Z M142 72 a8 9 0 1 0 0.1 0Z M94 75 a2 2 0 1 0 0.1 0Z M139 75 a2 2 0 1 0 0.1 0Z', 'M102 115 q4 7 8 0 M117 115 q4 7 8 0 M132 115 q4 7 8 0 M109 128 q4 7 8 0 M125 128 q4 7 8 0 M101 140 q4 7 8 0 M117 140 q4 7 8 0 M133 140 q4 7 8 0 M109 152 q4 7 8 0 M125 152 q4 7 8 0'],
+    ],
+  },
+  {
+    id: 'pencil-basics', title: 'Pencil Basics', category: 'Skills', minutes: 2, level: 1, skill: 'Light and dark',
+    steps: [
+      ['Try light and dark', 'On scrap paper, press softly for one line, then harder for the next.', '', ''],
     ],
   },
 ];

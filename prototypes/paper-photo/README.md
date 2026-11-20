@@ -1,6 +1,6 @@
 # Paper photo prototype
 
-[Issue #10](https://github.com/Shane-Neeley/little-pencil-club/issues/10) explores keeping a paper drawing in the browser after drawing. This prototype is outside the deployed game.
+[Issue #10](https://github.com/Shane-Neeley/little-pencil-club/issues/10) explores keeping a paper drawing in the browser after drawing. The prototype runs separately from the game under `prototypes/paper-photo/`, outside `dist/`. Use loopback and synthetic fixtures for fork testing. School hosting and distribution remain on hold.
 
 ## Run it locally
 
@@ -14,7 +14,7 @@ Open `http://127.0.0.1:8732/` on the same machine. Keep using the same address a
 
 - **Take a photo** asks the device’s file input for its rear-facing camera. **Choose a photo** opens the regular picker when Camera is unavailable or declined. Use a locally available synthetic image for testing.
 - Drag the corners to crop. The clear part of the preview shows what will be kept. When a corner has keyboard focus, use the arrow keys or hold Shift for a larger move. Canceling a crop or dismissing a picker leaves the saved drawing in place.
-- Use **Save here** to keep the crop in IndexedDB. **Download PNG** exports a separate copy. **Delete saved drawing** clears the browser copy after confirmation. Clearing this browser’s site data also clears the browser copy.
+- Use **Save here** to keep the crop in IndexedDB. **Download PNG** exports a separate copy. **Delete saved drawing** clears the browser copy after confirmation. Clearing this browser’s site data also clears the browser copy. Original photos in Photos or Files and separately downloaded PNGs remain outside the app’s deletion controls. An already-open tab may show a stale preview after a change in another tab until it reloads.
 
 ## Local limits
 
@@ -24,14 +24,15 @@ Each save encodes new PNG pixels from the crop, so the original file, its filena
 
 ## Browser checks
 
-The test runner creates synthetic inputs and serves the prototype on loopback. Install Playwright and WebKit to run the tests.
+The test runner creates synthetic inputs and serves the prototype on loopback. Install Playwright with its WebKit and Chromium browsers to run the tests.
 
 ```sh
 python3 -m pip install playwright
-python3 -m playwright install webkit
+python3 -m playwright install webkit chromium
 python3 prototypes/paper-photo/test_paper_photo.py -v
+PAPER_PHOTO_BROWSER=chromium python3 prototypes/paper-photo/test_paper_photo.py -v
 ```
 
-Playwright WebKit 26.5 passed in iPad Pro 11 portrait (834 × 1194) and landscape (1194 × 834). Tests used synthetic PNG and JPEG inputs, intercepted the file choosers, and blocked HTTP requests after loading the page. They checked invalid and empty selection, canceling a retake, crop pixels, output bounds, metadata removal, local save and replacement, reopening, PNG download, and delete. No physical camera or iPad was used.
+The browser suite uses iPad Pro 11 portrait (834 × 1194) and landscape (1194 × 834) profiles with synthetic PNG and JPEG inputs. It intercepts the file choosers and blocks HTTP requests after the three local assets load. It checks invalid and empty selection, canceled retake, crop pixels, output bounds, metadata removal, local save and replacement, reopening, PNG export, and deletion.
 
 For a real iPad check, use a test device and synthetic artwork. Verify the native rear-camera chooser, a declined or canceled capture followed by the regular picker, photo orientation and HEIF decoding, touch cropping in both orientations, and opening the exported PNG in Files. Check that reopening restores the browser copy and deleting it leaves any separately exported file intact.
