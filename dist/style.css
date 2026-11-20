@@ -45,6 +45,7 @@ h1, h2, h3, p { margin: 0; }
 }
 .site-nav a[aria-current], .site-nav a:hover { background: var(--lilac); color: var(--ink); }
 .site-nav .icon { width: 18px; height: 18px; }
+.audience-note { max-width: 1272px; margin: 0 auto; padding: 0 28px 12px; color: var(--muted); font-size: .9rem; line-height: 1.4; }
 .wrap { width: min(100%, 1272px); margin: 0 auto; padding: 30px 28px 60px; }
 
 .hero {
