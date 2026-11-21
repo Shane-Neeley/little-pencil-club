@@ -1,18 +1,22 @@
 # Changelog
 
-## Unreleased
+## November 20, 2026
+
+### Faster Sketchbook and safer progress (Site v8)
 
 - Sketchbook opens faster when you have lots of drawings. Previews appear as you scroll.
 - Finished checkmarks survive saves from an older tab. Progress imports update the open Sketchbook, and the finish screen tells you when to download a PNG to keep your drawing.
 
-## Featured sketches and portable progress
+[Release evidence](docs/releases/2026-11-20-sketchbook-and-progress.md).
+
+## November 19, 2026
+
+### Featured sketches and portable progress (Site v7)
 
 - Five featured drawings gain textured graphite, finishing accents and a choice you can make while drawing. Little owl also gains a sleepy expression.
 - Each topic gains two original lessons. Overlapping pebbles and leaf observation bring the library to 49, with independent practice in Skills.
 - Paper controls fit shorter phone screens, including the leaf reference lesson.
 - Sketchbook adds local Wiggle and direct PNG download for digital drawings. A progress file moves completed-lesson checkmarks between devices.
-
-## November 19, 2026
 
 ### New lessons and Pencil Pal cards (site-v4)
 
