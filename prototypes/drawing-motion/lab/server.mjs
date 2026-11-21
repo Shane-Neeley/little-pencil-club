@@ -5,7 +5,8 @@ import { pathToFileURL } from 'node:url';
 const fixture = await readFile(new URL('../jellyfish.png', import.meta.url));
 const mockGif = await readFile(new URL('./fixture-motion.gif', import.meta.url));
 const presets = new Set(['wiggle', 'bounce']);
-const gifLimit = 2_000_000;
+export const GIF_LIMIT = 2_000_000;
+const requestedGifFrames = 6;
 const labPanel = await readFile(new URL('./panel.html', import.meta.url), 'utf8');
 const demo = await readFile(new URL('../index.html', import.meta.url), 'utf8');
 const page = demo.replace('</main>', `${labPanel}\n</main>`).replace(
@@ -44,13 +45,14 @@ function presetRequest() {
 function gifRequest() {
   const body = new FormData();
   body.set('model', 'gpt-image-2.6-flare');
-  body.set('image', new Blob([fixture], { type: 'image/png' }), 'jellyfish.png');
+  body.set('image[]', new Blob([fixture], { type: 'image/png' }), 'jellyfish.png');
   body.set('prompt', 'Make this synthetic jellyfish gently tilt side to side and return to its first pose. Keep the original outline, face, tentacles, and pencil colors recognizable. Keep the background simple and the whole drawing in frame.');
   body.set('quality', 'low');
+  body.set('moderation', 'auto');
   body.set('size', 'auto');
   body.set('n', '1');
   body.set('output_format', 'gif');
-  body.set('frame_count', '6');
+  body.set('frame_count', String(requestedGifFrames));
   body.set('frame_duration_ms', '240');
   return { path: '/v1/images/edits', body };
 }
@@ -63,12 +65,46 @@ async function mockTransport({ path }) {
 }
 
 function validateGif(value) {
-  if (typeof value !== 'string' || value.length > Math.ceil(gifLimit / 3) * 4) return false;
+  if (typeof value !== 'string' || value.length > Math.ceil(GIF_LIMIT / 3) * 4) return false;
   const bytes = Buffer.from(value, 'base64');
-  if (bytes.length < 30 || bytes.length > gifLimit || bytes.toString('base64') !== value) return false;
+  if (bytes.length < 30 || bytes.length > GIF_LIMIT || bytes.toString('base64') !== value) return false;
   if (!['GIF87a', 'GIF89a'].includes(bytes.toString('ascii', 0, 6)) || bytes.at(-1) !== 0x3b) return false;
   const [width, height] = [bytes.readUInt16LE(6), bytes.readUInt16LE(8)];
-  return width > 0 && height > 0 && width <= 2048 && height <= 2048;
+  return width > 0 && height > 0 && width <= 2048 && height <= 2048
+    && hasRequestedFrames(bytes, width, height);
+}
+
+// Walk palettes, extensions, and image data sub-blocks before accepting the GIF.
+// This validates structure and frame count. A decoder is still needed for fidelity checks.
+function hasRequestedFrames(bytes, canvasWidth, canvasHeight) {
+  const paletteBytes = flags => flags & 0x80 ? 3 * (2 << (flags & 7)) : 0;
+  let offset = 13 + paletteBytes(bytes[10]);
+  let frames = 0;
+
+  while (offset < bytes.length) {
+    const block = bytes[offset++];
+    if (block === 0x3b) return offset === bytes.length && frames === requestedGifFrames;
+    if (block === 0x21) {
+      offset++; // Extension label.
+    } else if (block === 0x2c) {
+      if (offset + 9 > bytes.length) return false;
+      const left = bytes.readUInt16LE(offset);
+      const top = bytes.readUInt16LE(offset + 2);
+      const width = bytes.readUInt16LE(offset + 4);
+      const height = bytes.readUInt16LE(offset + 6);
+      if (!width || !height || left + width > canvasWidth || top + height > canvasHeight) return false;
+      offset += 9 + paletteBytes(bytes[offset + 8]);
+      const codeSize = bytes[offset++];
+      if (codeSize < 2 || codeSize > 8 || !bytes[offset] || ++frames > requestedGifFrames) return false;
+    } else {
+      return false;
+    }
+
+    while (offset < bytes.length && bytes[offset] !== 0) offset += bytes[offset] + 1;
+    if (offset >= bytes.length) return false;
+    offset++; // End of sub-blocks.
+  }
+  return false;
 }
 
 export async function preview(kind, transport = mockTransport, timeoutMs = 1200) {

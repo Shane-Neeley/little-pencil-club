@@ -41,7 +41,7 @@ test('the GIF edit describes a bounded fixture animation and validates the retur
   assert.equal(sent.body.get('model'), 'gpt-image-2.6-flare');
   assert.equal(sent.body.get('output_format'), 'gif');
   assert.equal(Number(sent.body.get('frame_count')) * Number(sent.body.get('frame_duration_ms')), 1440);
-  assert.deepEqual(Buffer.from(await sent.body.get('image').arrayBuffer()), original);
+  assert.deepEqual(Buffer.from(await sent.body.get('image[]').arrayBuffer()), original);
   assert.equal(result.kind, 'gif');
   assert.deepEqual(Buffer.from(result.gif, 'base64'), mockGif);
   const oversizedGif = Buffer.from(mockGif);
@@ -77,6 +77,7 @@ test('the loopback lab rejects submitted images and unknown routes', async t => 
   const originalResponse = await fetch(`${url}/jellyfish.png`);
   assert.deepEqual(Buffer.from(await originalResponse.arrayBuffer()), original);
   assert.equal((await fetch(`${url}/lab/server.mjs`)).status, 404);
+  assert.equal((await fetch(`${url}/lab/flare-trial.mjs`)).status, 404);
   assert.equal((await fetch(`${url}/preview/gif`, { method: 'POST', body: original })).status, 400);
   assert.equal((await fetch(`${url}/preview/preset`, {
     method: 'POST', headers: { Origin: 'https://example.com' },
