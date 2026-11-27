@@ -132,6 +132,9 @@ h1, h2, h3, p { margin: 0; }
 .level-filters { margin-top: -9px; }
 .level-help { color: var(--muted); margin: -8px 0 14px; }
 .level-help:empty { display: none; }
+.draw-next { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 16px; }
+.draw-next[hidden], .draw-next-lesson[hidden] { display: none; }
+.draw-next-lesson { text-decoration: underline; text-underline-offset: .18em; }
 .no-lessons { grid-column: 1 / -1; }
 .card-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 15px; }
 .collection-heading, .featured-sketches { grid-column: 1 / -1; }

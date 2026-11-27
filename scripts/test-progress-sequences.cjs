@@ -25,6 +25,56 @@ const states = new Map(samples.map(([id, title, steps]) => [id, {title, steps}])
 const format = 'little-pencil-club-progress';
 const count = snapshot => [...snapshot.values()].filter(state => state.complete).length;
 
+async function checkDrawNext(browser, origin) {
+  const mobile = await browser.newContext({ viewport: { width: 320, height: 568 }, isMobile: true, hasTouch: true });
+  try {
+    await mobile.route(url => url.origin !== origin, route => route.abort());
+    const page = await mobile.newPage();
+    await page.goto(origin);
+    const fox = page.getByRole('link', { name: 'Draw the little fox', exact: true });
+    const surprise = page.getByRole('button', { name: 'Surprise me', exact: true });
+    const suggestion = page.locator('.draw-next-lesson');
+    const announcement = page.locator('.draw-next [role="status"]');
+    const before = await page.evaluate(() => Object.entries(localStorage));
+    assert.equal(await fox.getAttribute('href'), '#draw/little-fox');
+    assert.equal(await suggestion.isVisible(), false);
+    await surprise.tap();
+    const first = await suggestion.getAttribute('href');
+    assert.match(first, /^#draw\//);
+    assert.match(await announcement.textContent(), /^Suggested lesson: /);
+    assert.equal(await page.evaluate(() => location.hash), '');
+    await surprise.focus();
+    await page.keyboard.press('Enter');
+    assert.notEqual(await suggestion.getAttribute('href'), first);
+    assert.equal(await surprise.evaluate(node => node === document.activeElement), true);
+    const topics = page.getByRole('group', { name: 'Lesson topics' });
+    const levels = page.getByRole('group', { name: 'Lesson levels' });
+    await topics.getByRole('button', { name: 'Skills', exact: true }).tap();
+    assert.equal(await suggestion.isVisible(), false);
+    assert.equal(await suggestion.getAttribute('href'), null);
+    assert.equal(await announcement.textContent(), '');
+    await levels.getByRole('button', { name: 'Hard', exact: true }).tap();
+    assert.equal(await surprise.isVisible(), false);
+    assert.equal(await page.getByText('Try another topic or level.').isVisible(), true);
+    await topics.getByRole('button', { name: 'Animals', exact: true }).tap();
+    await levels.getByRole('button', { name: 'Easy', exact: true }).tap();
+    const visible = await page.locator('#lesson-cards a.lesson-card').evaluateAll(cards => cards.map(card => card.getAttribute('href')));
+    assert.ok(visible.length);
+    await surprise.tap();
+    const selected = await suggestion.getAttribute('href');
+    assert.ok(visible.includes(selected));
+    assert.deepEqual(await page.evaluate(() => Object.entries(localStorage)), before);
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+    const title = (await suggestion.textContent()).replace(/^Draw: /, '');
+    await suggestion.tap();
+    await page.waitForURL(url => url.hash === selected);
+    await page.getByRole('heading', { name: title, exact: true }).waitFor();
+    console.log('Draw Next opens a filtered lesson, supports keyboard/touch, and fits 320×568');
+  } finally {
+    await mobile.close();
+  }
+}
+
 async function main() {
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const origin = 'http://127.0.0.1:' + server.address().port;
@@ -33,6 +83,7 @@ async function main() {
     args: ['--disable-background-networking', '--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1'],
   });
   try {
+    await checkDrawNext(browser, origin);
     const context = await browser.newContext({reducedMotion:'reduce'});
     await context.addInitScript(() => { Date.now = () => 1785000000123; });
     await context.route(url => url.origin !== origin, route => route.abort());
