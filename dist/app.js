@@ -227,6 +227,7 @@ function previewCard(lesson, book = false) {
 function renderLibrary() {
   main.className = 'wrap';
   const fox = lessons[0];
+  let suggestedLesson;
   main.innerHTML = `
     <section class="hero" aria-labelledby="home-title">
       <div class="hero-copy">
@@ -256,8 +257,35 @@ function renderLibrary() {
         ${difficulties.map(({ label }, index) => `<button type="button" class="filter" data-level="${index + 1}" aria-pressed="${index + 1 === levelFilter}">${label}${difficultyPencils(index + 1)}</button>`).join('')}
       </div>
       <p class="level-help" aria-live="polite"></p>
+      <div class="draw-next">
+        <button type="button" class="secondary" id="draw-next">${icon('sparkle')} Surprise me</button>
+        <a class="quiet draw-next-lesson" hidden></a>
+        <span class="sr-only" role="status"></span>
+      </div>
       <div class="card-grid" id="lesson-cards"></div>
     </section>`;
+  const drawNext = main.querySelector('.draw-next');
+  const drawNextLink = drawNext.querySelector('a');
+  const drawNextStatus = drawNext.querySelector('[role="status"]');
+  function resetSuggestion() {
+    suggestedLesson = undefined;
+    drawNext.hidden = visibleLessons().length === 0;
+    drawNextLink.hidden = true;
+    drawNextLink.removeAttribute('href');
+    drawNextLink.textContent = '';
+    drawNextStatus.textContent = '';
+  }
+  drawNext.querySelector('button').addEventListener('click', () => {
+    const visible = visibleLessons();
+    const alternatives = visible.filter(lesson => lesson !== suggestedLesson);
+    const pool = alternatives.length ? alternatives : visible;
+    if (!pool.length) return;
+    suggestedLesson = pool[Math.floor(Math.random() * pool.length)];
+    drawNextLink.href = `#draw/${suggestedLesson.id}`;
+    drawNextLink.textContent = `Draw: ${suggestedLesson.title}`;
+    drawNextLink.hidden = false;
+    drawNextStatus.textContent = `Suggested lesson: ${suggestedLesson.title}`;
+  });
   main.querySelector('.library').addEventListener('click', event => {
     const button = event.target.closest('[data-filter], [data-level]');
     if (!button || button.getAttribute('aria-pressed') === 'true') return;
@@ -266,12 +294,19 @@ function renderLibrary() {
     button.parentElement.querySelectorAll('button').forEach(choice => {
       choice.setAttribute('aria-pressed', String(choice === button));
     });
+    resetSuggestion();
     renderLessonCards();
   });
+  resetSuggestion();
   renderLessonCards();
   const hero = main.querySelector('.hero-sheet canvas');
   paintCard(hero);
   observer.observe(hero);
+}
+
+function visibleLessons() {
+  return lessons.filter(lesson =>
+    (filter === 'All' || lesson.category === filter) && (!levelFilter || lesson.level === levelFilter));
 }
 
 function renderLessonCards() {
@@ -280,8 +315,7 @@ function renderLessonCards() {
     observer.unobserve(canvas);
     cardVisibility.unobserve(canvas);
   });
-  const visible = lessons.filter(lesson =>
-    (filter === 'All' || lesson.category === filter) && (!levelFilter || lesson.level === levelFilter));
+  const visible = visibleLessons();
   document.querySelector('#lesson-count').textContent = `${visible.length} lessons`;
   main.querySelector('.level-help').textContent = difficulties[levelFilter - 1]?.help ?? '';
   if (filter === 'All' && !levelFilter) {
