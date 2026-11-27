@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Surprise me suggests a drawing that fits the topic and difficulty you picked.
+- The age guidance now sits below the drawing area.
+
 ## November 20, 2026
 
 ### Faster Sketchbook and safer progress (Site v8)

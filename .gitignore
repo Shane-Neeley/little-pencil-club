@@ -6,3 +6,4 @@
 *.tar.gz
 .venv/
 little-pencil-club-qr-cards.pdf
+__pycache__/
